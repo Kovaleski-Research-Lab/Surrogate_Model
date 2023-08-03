@@ -1,0 +1,92 @@
+
+#------------------------
+#   Material Parameters
+#-------------------------
+
+n_fusedSilica : 1.44
+n_PDMS : 1.4
+n_amorphousSi : 3.48
+
+pml_thickness : 0.780
+height_pillar : 1.020
+radius :
+rad_min : 0.075
+rad_max : 0.250
+width_PDMS : 1.560
+width_fusedSilica : 0.780
+non_pml :
+
+center_PDMS :
+center_fusedSilica :
+center_pillar :
+
+z_fusedSilica :
+z_PDMS :
+x_dim :
+y_dim :
+geometry :
+
+#-----------------------
+#   Source Parameters
+#-----------------------
+
+wavelength_1550 : 1.55
+wavelength_1300 : 1.30
+wavelength_1060 : 1.06
+wavelength_1650 : 1.65
+wavelength_2881 : 
+fcen :
+freq_1550 :
+freq_1300 :
+freq_1060 :
+freq_1650 :
+freq_2881 :
+fwidth :
+k_point :
+center_source :
+source_cmpt :
+source_type : "gaussian"
+source :
+cell_x :
+cell_y :
+cell_z :
+decay_rate : 0.0001
+
+#------------------------
+#   Simulation Parameters
+#-------------------------
+
+resolution : 80
+lattice_size : 0.680
+grid_size : 3 
+
+cell_x :
+cell_y :
+cell_z :
+cell_size :
+
+pml_layers :
+k_point :
+pml_layers :
+symmetries :
+
+#------------------------
+#   Flux Object Params
+#------------------------
+
+freq :
+nfreq : 1 
+freq_list :
+df : 0 
+fr_center :
+fr :
+#flux_object :
+near_pt :
+near_vol :
+
+#-----------------------
+#  Animation Params
+#----------------------
+
+plot_plane :
+fps : 20
