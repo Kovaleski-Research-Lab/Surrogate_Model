@@ -6,7 +6,7 @@ def run_script():
 
     for index in neighbors_list:
         print(f"index = {index}")
-        command = f"mpirun -np 40 python3 run_sim.py -neighbor_index {index}"
+        command = f"mpirun -np 40 python3 run_sim.py -neighbor_index {index} -resim False"
  
         stdout_file = f"output_{index}.txt"
         stderr_file = f"error_{index}.txt"

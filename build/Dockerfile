@@ -16,7 +16,7 @@ RUN conda update -y conda && \
     conda install -c conda-forge ipython tqdm -y && \
     conda install -c conda-forge segmentation-models-pytorch -y && \
     conda install -c conda-forge pandas -y && \
-    conda install -c conda-forge ipympl -y && \
+    conda install -c conda-forge ipympl jinja2 -y && \
     conda install -c conda-forge ffmpeg-python -y
 EXPOSE 8888
 

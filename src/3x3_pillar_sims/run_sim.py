@@ -10,8 +10,8 @@ import numpy as np
 import argparse
 import matplotlib.pyplot as plt
 
-sys.path.append("../")
 import _3x3Pillars
+sys.path.append("../")
 from utils import parameter_manager
 
 def dump_geometry_image(model, pm):
@@ -20,25 +20,26 @@ def dump_geometry_image(model, pm):
     model.sim.plot2D(output_plane = plot_plane)
     plt.savefig("geometry.png")
 
-def dump_data(neighbor_index, data):
+def dump_data(neighbor_index, data, pm):
     
-    path_save = "/develop/data/spie_journal_2023"
-    folder_name = "gaussian_dataset"
-    folder_path = os.path.join(path_save, folder_name)
+    #path_save = "/develop/data/spie_journal_2023"
+    folder_path = pm.path_dataset
+    #folder_name = "gaussian_dataset"
+    #folder_path = os.path.join(path_save, folder_name)
 
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-        print("Folder path created.")
-    else:
-        print("Folder path already exists")
+    #if not os.path.exists(folder_path):
+    #    os.makedirs(folder_path)
+    #    print("Folder path created.")
+    #else:
+    #    print("Folder path already exists")
 
-    dataset_name = "%s.pkl" % (str(neighbor_index).zfill(6))
-    filename = os.path.join(folder_path, dataset_name)
+    sim_name = "%s.pkl" % (str(neighbor_index).zfill(6))
+    filename = os.path.join(folder_path, sim_name)
 
     with open(filename, "wb") as f:
         pickle.dump(data,f)
 
-def run(radii_list, neighbor_index, params, pm):
+def run(radii_list, neighbor_index, pm, folder_name=None, dataset=None):
 
     a = pm.lattice_size
     
@@ -118,19 +119,58 @@ def run(radii_list, neighbor_index, params, pm):
     data["eps_data"] = model.eps_data
     data["sim_time"] = elapsed_time
     data["radii"] = radii_list
-
-    dump_data(neighbor_index, data) 
+    
+    if(dataset is None):
+        dump_data(neighbor_index, data, pm) 
+    else:
+        path_resims = params['path_resims']
+        eval_name = f"{folder_name}_{dataset}_{idx}.pkl"
+        filename = os.path.join(path_resims, eval_name)
+        with open(filename, "wb") as f:
+            pickle.dump(data, f)
     #dump_geometry_image(model, pm)
 if __name__=="__main__":
 
     params = yaml.load(open('../config.yaml'), Loader = yaml.FullLoader).copy()
-    pm = parameter_manager.ParameterManager(params=params)
 
-    neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
     parser = argparse.ArgumentParser()
-    parser.add_argument("-neighbor_index", type=int, help="Index of the list of randomly generated radii_lists")
+    parser.add_argument("-neighbor_index", type=int, help="The index matching the index in radii_neighbors")
+    parser.add_argument("-resim", type=int, help="True if launching resims, False if generating data")
+
+    parser.add_argument("-folder_name", help="Contains info about the model")
+    parser.add_argument("-dataset", help="Train or Valid")
+    parser.add_argument("-path_output", help="This is the path that simulations get dumped to")
+
     args = parser.parse_args()
-    neighbor_index = args.neighbor_index
-    radii_list = neighbors_library[neighbor_index]
-    run(radii_list, neighbor_index, params, pm)
+    idx = args.neighbor_index
+    resim = args.resim
+    params['path_dataset'] = args.path_output
+    # if resim is false then we are generating data.
+    pm = parameter_manager.ParameterManager(params=params)
     
+    #embed()
+    if(resim == 0):
+         
+        neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
+        radii_list = neighbors_library[idx]
+        
+        run(radii_list, idx, pm)
+
+    else:
+        folder_name = args.folder_name
+        dataset = args.dataset
+
+        if dataset == 'train':
+            path_results = os.path.join(path_results, folder_name, 'train_info')
+        elif dataset == 'valid':
+            path_results = os.path.join(path_results, folder_name, 'valid_info')
+        else:
+            exit()
+        
+        model_results = pickle.load(open(os.path.join(path_results,'resim.pkl'), 'rb'))
+
+        phases = model_results['phase_pred'][idx]
+
+        radii_list = mapping.phase_to_radii(phases)
+        run(radii_list, idx, pm, folder_name, dataset)
+
