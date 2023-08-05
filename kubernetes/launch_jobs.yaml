@@ -8,7 +8,7 @@ spec:
       containers:
         - name: meep-controller
           image: docker.io/ctvqfq/bunny_ai:spie
-          command: ["python3", "kubernetes/run_data_generation.py", "-config", "config.yaml", ">", "/develop/results/log.out"]
+          command: ["python3", "kubernetes/run_data_generation.py", "-config", "kubernetes/config.yaml", ">", "/develop/results/log.out"]
           resources:
             limits:
               memory: 8G
