@@ -8,7 +8,7 @@
 
 path_code: https://github.com/Kovaleski-Research-Lab/surrogate_model.git
 path_image: docker.io/ctvqfq/bunny_ai:spie
-path_template: kube_files/templates/job.txt
+path_template: /develop/code/kubernetes/kube_files/templates/job.txt
 path_results: /develop/results
 
 # Define Computing Resources
