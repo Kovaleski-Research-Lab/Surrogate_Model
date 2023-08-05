@@ -1,0 +1,48 @@
+{# kube_files/templates/job.txt #}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{job_name}}
+spec:
+  template:
+    spec:
+      containers:
+        - name: {{job_name}}
+          image: {{path_image}}
+          command: ["mpirun", "-np", {{num_cpus}}, 
+                    "python3", "/develop/code/src/3x3_pillar_sims/run_sim.py", 
+                    "-neighbor_index", {{n_index}}, "-path_output", {{path_results}}, "-resim", "0", "-dataset", "n/a", "-folder_name", "n/a"]
+          resources:
+            limits:
+              memory: {{num_mem_lim}}
+              cpu: {{num_cpus}}
+            requests:
+              memory: {{num_mem_req}}
+              cpu: {{num_cpus}}
+          volumeMounts:
+            - name: meep-code
+              mountPath: /develop/code
+            - name: meep-results
+              mountPath: /develop/results
+
+      initContainers:
+        - name: git-cloner
+          image: alpine/git
+          command:
+            - git
+            - clone
+            - {{path_code}}
+            - /develop/code
+          volumeMounts:
+            - name: meep-code
+              mountPath: /develop/code
+
+      volumes:
+        - name: meep-code
+          persistentVolumeClaim:
+            claimName: meep-code
+        - name: meep-results
+          persistentVolumeClaim:
+            claimName: meep-results
+
+      restartPolicy: Never
