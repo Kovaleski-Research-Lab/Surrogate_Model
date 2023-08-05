@@ -21,6 +21,7 @@ spec:
               mountPath: /develop/code
             - name: meep-results
               mountPath: /develop/results
+        imagePullPolicy: Always
 
       initContainers:
         - name: git-cloner
