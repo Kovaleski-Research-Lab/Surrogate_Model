@@ -26,7 +26,7 @@ spec:
       initContainers:
         - name: git-cloner
           image: alpine/git
-          command: ["/bin/sh","-c","rm -r * && git clone https://github.com/Kovaleski-Research-Lab/surrogate_model.git ."]
+          command: ["/bin/sh","-c","git clone https://github.com/Kovaleski-Research-Lab/surrogate_model /develop/data; cp -r /develop/data/* /develop/code"]
           volumeMounts:
             - name: meep-code
               mountPath: /develop/code
