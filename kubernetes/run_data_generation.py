@@ -86,7 +86,7 @@ def run_generation(params):
 
             # -- Configure simulation job
 
-            job_name = "sim_%s" % (str(group_id + i).zfill(6))
+            job_name = "sim-%s" % (str(group_id + i).zfill(6))
 
             current_group.append(job_name)
 

@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Pod
+metadata:
+  name: monitor
+spec:
+  template:
+    spec:
+      containers:
+        - name: monitor
+          image:  docker.io/ctvqfq/bunny_ai/spie
+          stdin: True
+          tty: True
+          resources:
+            limits:
+              memory: 8G
+              cpu: 6
+            requests:
+              memory: 4G
+              cpu: 6
+          volumeMounts:
+            - name: meep-results
+              mountPath: /develop/results
+      volumes:
+        - name: meep-results
+          persistentVolumeClaim:
+            claimName: meep-results
+
+      restartPolicy: Never
