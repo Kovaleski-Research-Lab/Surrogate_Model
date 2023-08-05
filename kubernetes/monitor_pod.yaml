@@ -7,7 +7,7 @@ spec:
     spec:
       containers:
         - name: monitor
-          image:  docker.io/ctvqfq/bunny_ai/spie
+          image: docker.io/ctvqfq/bunny_ai:spie
           stdin: True
           tty: True
           resources:
