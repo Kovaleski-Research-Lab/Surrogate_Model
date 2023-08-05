@@ -67,9 +67,13 @@ def run_generation(params):
 
     # - Begin data generation
 
+    print("\nLaunching Data Generation Jobs")
+
     group_id, parallel_id = 1, 1
 
     while(group_id < params["num_sims"]):
+
+        print("\nCurrent Group: %s\n" % parallel_id)
 
         # - Launch simulation job group
 
@@ -109,9 +113,16 @@ def run_generation(params):
 
         # - Wait until current simulation job group is completed. Checks every minute.
 
+        k, wait_time_sec = 0, 60
+
         while(len(os.listdir(sim_folder)) < (params["num_parallel_ops"] * parallel_id)):
 
-            time.sleep(60)
+            time.sleep(wait_time_sec)
+
+            if(k % 5 == 0):
+                print("Elapsed time (group %s): %s minutes" % (parallel_id, (wait_time_sec * k) / 60))
+            
+            k += 1
 
         # - Clean up job group
 
@@ -120,6 +131,8 @@ def run_generation(params):
 
         group_id += params["num_parallel_ops"]
         parallel_id += 1
+
+    print("\nData Generation Complete\n")
 
 # Validate: Configuration File
 

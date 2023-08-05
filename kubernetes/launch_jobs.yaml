@@ -1,0 +1,45 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: meep_controller
+spec:
+  template:
+    spec:
+      containers:
+        - name: meep_controller
+          image:  docker.io/ctvqfq/bunny_ai/spie
+          command: ["python3", "kubernetes/run_data_generation.py", "-config", "config.yaml", ">", "/develop/results/log.out"]
+          resources:
+            limits:
+              memory: 8G
+              cpu: 6
+            requests:
+              memory: 4G
+              cpu: 6
+          volumeMounts:
+            - name: meep-code
+              mountPath: /develop/code
+            - name: meep-results
+              mountPath: /develop/results
+
+      initContainers:
+        - name: git-cloner
+          image: alpine/git
+          command:
+            - git
+            - clone
+            - https://github.com/Kovaleski-Research-Lab/surrogate_model 
+            - /develop/code
+          volumeMounts:
+            - name: meep-code
+              mountPath: /develop/code
+
+      volumes:
+        - name: meep-code
+          persistentVolumeClaim:
+            claimName: meep-code
+        - name: meep-results
+           persistentVolumeClaim:
+            claimName: meep-results
+
+      restartPolicy: Never
