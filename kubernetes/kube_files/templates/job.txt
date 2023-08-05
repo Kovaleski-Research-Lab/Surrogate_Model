@@ -32,7 +32,7 @@ spec:
             - git
             - clone
             - {{path_code}}
-            - /develop/code
+            - .
           volumeMounts:
             - name: meep-code
               mountPath: /develop/code

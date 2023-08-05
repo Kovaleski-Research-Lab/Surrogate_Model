@@ -29,7 +29,7 @@ spec:
             - git
             - clone
             - https://github.com/Kovaleski-Research-Lab/surrogate_model.git
-            - /develop/code
+            - .
           volumeMounts:
             - name: meep-code
               mountPath: /develop/code
