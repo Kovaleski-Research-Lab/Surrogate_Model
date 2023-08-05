@@ -1,0 +1,31 @@
+# Configuration: Meep Data Generation
+
+# Define Paths
+# - path_code: path to public code repository
+# - path_image: path to public container image
+# - path_template: path to kubernetes job template
+# - path_results: path to store generated job files
+
+path_code: https://github.com/Kovaleski-Research-Lab/surrogate_model 
+path_image: docker.io/ctvqfq/bunny_ai/spie
+path_template: kube_files/templates/job.txt
+path_results: /develop/results
+
+# Define Computing Resources
+# - num_mem_lim: limits of random access memory
+# - num_mem_req: requested random access memory
+# - num_cpus_per_op: number of cpus resource for each simulation, denote as a.
+# - num_parallel_ops: number of simulations happening in parallel, Denoate as b.
+# - num_cpus_total: number of cpus used at once in computing cluster, denote as c | c = a * b.
+
+num_mem_lim: 1T
+num_mem_req: 800G
+num_cpus_per_op: 32
+num_parallel_ops: 64
+num_cpus_total: 2048
+
+# Define Simulation
+
+num_sims: 500
+
+
