@@ -7,7 +7,7 @@ spec:
     spec:
       containers:
         - name: meep-controller
-          image: docker.io/ctvqfq/bunny_ai:spie
+          image: docker.io/ctvqfq/bunny_ai:spie-1.0
           command: ["python3", "kubernetes/run_data_generation.py", "-config", "kubernetes/config.yaml"]
           resources:
             limits:
@@ -26,11 +26,7 @@ spec:
       initContainers:
         - name: git-cloner
           image: alpine/git
-          command:
-            - git
-            - clone
-            - https://github.com/Kovaleski-Research-Lab/surrogate_model.git
-            - .
+          command: ["/bin/bash","-c","rm -r * && git clone https://github.com/Kovaleski-Research-Lab/surrogate_model.git ."]
           volumeMounts:
             - name: meep-code
               mountPath: /develop/code
