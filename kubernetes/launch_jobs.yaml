@@ -28,7 +28,7 @@ spec:
           command:
             - git
             - clone
-            - https://github.com/Kovaleski-Research-Lab/surrogate_model 
+            - https://github.com/Kovaleski-Research-Lab/surrogate_model.git
             - /develop/code
           volumeMounts:
             - name: meep-code
