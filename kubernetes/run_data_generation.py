@@ -152,7 +152,7 @@ def run_generation(params):
 
                 print("Elapsed time (group %s): %s minutes" % (parallel_id, (wait_time_sec * k) / 60))
 
-                if(sum(pos_phases) == params["num_parallel_groups"]):
+                if(sum(pod_phases) == params["num_parallel_ops"]):
                     break
             
             k += 1

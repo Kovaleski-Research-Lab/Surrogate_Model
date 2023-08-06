@@ -2,6 +2,7 @@ import os
 import sys
 
 path = os.path.dirname(os.path.realpath(sys.argv[0]))
+sys.path.append(path.strip(path.split("/")[-1]))
 sys.path.append(path.strip(path.split("/")[-1]) + "utils")
 
 import logging
