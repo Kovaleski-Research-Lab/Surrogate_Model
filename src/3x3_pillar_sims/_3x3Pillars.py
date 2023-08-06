@@ -13,7 +13,9 @@ import logging
 import time
 
 #sys.path.append("../")
-from utils import parameter_manager
+#from utils import parameter_manager
+
+import parameter_manager
 
 def mod_axes(ax):
 
