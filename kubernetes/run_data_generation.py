@@ -95,9 +95,7 @@ def run_generation(params):
                              "num_cpus": params["num_cpus_per_op"],
                              "num_mem_lim": params["num_mem_lim"], 
                              "num_mem_req": params["num_mem_req"], 
-                             "path_results": sim_folder, 
-                             "path_image": params["path_image"], 
-                             "path_code": params["path_code"]}
+                             "path_results": sim_folder, "path_image": params["path_image"]}
 
             filled_template = template.render(template_info)
 

@@ -1,7 +1,6 @@
 # Configuration: Meep Data Generation
 
 # Define Paths
-# - path_code: path to public code repository
 # - path_image: path to public container image
 # - path_template: path to kubernetes job template
 # - path_results: path to store generated job files
