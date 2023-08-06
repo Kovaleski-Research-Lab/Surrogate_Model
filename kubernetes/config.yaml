@@ -6,7 +6,7 @@
 # - path_simulations: path to store simulations (pvc)
 # - path_sim_job_files: path to store generated job files (local)
 
-path_image: docker.io/ctvqfq/bunny_ai:spie-1.0
+path_image: docker.io/ctvqfq/bunny_ai:spie-1.1
 path_template: kube_files/templates/job.txt
 
 path_simulations: /develop/results
