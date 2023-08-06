@@ -1,8 +1,11 @@
-import sys 
+import os
+import sys
+
+path = os.path.dirname(os.path.realpath(sys.argv[0]))
+sys.path.append(path.strip(path.split("/")[-1]) + "utils")
+
 import logging
 import time
-import os
-from IPython import embed
 import yaml
 import meep as mp
 import pickle
@@ -11,7 +14,7 @@ import argparse
 import matplotlib.pyplot as plt
 
 import _3x3Pillars
-sys.path.append("../")
+
 from utils import parameter_manager
 
 def dump_geometry_image(model, pm):
@@ -148,7 +151,6 @@ if __name__=="__main__":
     # if resim is false then we are generating data.
     pm = parameter_manager.ParameterManager(params=params)
     
-    #embed()
     if(resim == 0):
          
         neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))

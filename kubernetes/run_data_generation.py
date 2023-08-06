@@ -3,10 +3,32 @@
 import os
 import sys
 import yaml
+import time
 import shutil
+import atexit
 import subprocess
 
+from kubernetes import client, config
 from jinja2 import Environment, FileSystemLoader
+
+# Create: Response, Program Exit
+
+def exit_handler():
+
+    config.load_kube_config()
+
+    v1 = client.CoreV1Api()
+
+    pod_list = v1.list_namespaced_pod(namespace = params["namespace"])
+
+    current_group = [ele.metadata.owner_references[0].name for ele in pod_list.items if(params["kill_tag"] in ele.metadata.name)]
+
+    current_group = list(set(current_group))
+
+    for job_name in current_group:
+        subprocess.run(["kubectl", "delete", "job", job_name])
+
+    print("\nCleaned up any jobs that include tag : %s\n" % params["kill_tag"])
 
 # Create: Results Folders
 
@@ -46,6 +68,12 @@ def load_file(path):
 
 def run_generation(params):
 
+    # Set kubernetes environment
+
+    config.load_kube_config()
+
+    v1 = client.CoreV1Api()
+
     # Load template
 
     template = load_file(params["path_template"])
@@ -57,13 +85,7 @@ def run_generation(params):
 
     # Launch Simulation Jobs
 
-    # - Create results folder
-
-    sim_folder = os.path.join(params["path_results"], "simulations")
-    job_folder = os.path.join(params["path_results"], "sim_job_files")
-
-    create_folder(sim_folder)
-    create_folder(job_folder)
+    create_folder(params["path_sim_job_files"])
 
     # - Begin data generation
 
@@ -91,34 +113,47 @@ def run_generation(params):
             current_group.append(job_name)
 
             template_info = {"job_name": job_name, 
-                             "n_index": group_id + i,
-                             "num_cpus": params["num_cpus_per_op"],
-                             "num_mem_lim": params["num_mem_lim"], 
-                             "num_mem_req": params["num_mem_req"], 
-                             "path_results": sim_folder, "path_image": params["path_image"]}
+                             "n_index": str(group_id + i),
+                             "num_cpus": str(params["num_cpus_per_op"]),
+                             "num_mem_lim": str(params["num_mem_lim"]),
+                             "num_mem_req": str(params["num_mem_req"]),
+                             "path_results": params["path_simulations"], "path_image": params["path_image"]}
 
             filled_template = template.render(template_info)
 
-            path_job = os.path.join(job_folder, job_name + ".yaml")
+            path_job = os.path.join(params["path_sim_job_files"], job_name + ".yaml")
 
-            # -- Launch simulation job
-            
-            subprocess.run(["kubectl", "apply", "-f", path_job])
+            if(sys.platform == "win32"):
+                path_job = path_job.replace("\\", "/").replace("/", "\\")
 
             # -- Save simulation job file
 
             save_file(path_job, filled_template)
 
+            # -- Launch simulation job
+
+            subprocess.run(["kubectl", "apply", "-f", path_job])
+
         # - Wait until current simulation job group is completed. Checks every minute.
 
         k, wait_time_sec = 0, 60
 
-        while(len(os.listdir(sim_folder)) < (params["num_parallel_ops"] * parallel_id)):
+        while(1):
 
             time.sleep(wait_time_sec)
 
-            if(k % 5 == 0):
+            if(k % 2 == 0):
+
+                pod_list = v1.list_namespaced_pod(namespace = params["namespace"])
+
+                #pod_names = [item.metadata.name for item in pod_list.items]
+                pod_phases = [item.status.phase for item in pod_list.items]
+                pod_phases = [1 for ele in pod_phases if(ele == "Succeeded")]
+
                 print("Elapsed time (group %s): %s minutes" % (parallel_id, (wait_time_sec * k) / 60))
+
+                if(sum(pos_phases) == params["num_parallel_groups"]):
+                    break
             
             k += 1
 
@@ -171,10 +206,12 @@ def parse_args(all_args, tags = ["--", "-"]):
 # Main: Load Configuration File
 
 if __name__ == "__main__":
-    
+
     args = parse_args(sys.argv)
 
     params = load_config(args["config"]) 
+
+    atexit.register(exit_handler)
 
     run_generation(params)
     

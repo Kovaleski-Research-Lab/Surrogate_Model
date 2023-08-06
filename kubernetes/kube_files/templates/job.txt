@@ -9,9 +9,7 @@ spec:
       containers:
         - name: {{job_name}}
           image: {{path_image}}
-          command: ["mpirun", "-np", {{num_cpus}}, 
-                    "python3", "/develop/code/src/3x3_pillar_sims/run_sim.py", 
-                    "-neighbor_index", {{n_index}}, "-path_output", {{path_results}}, "-resim", "0", "-dataset", "n/a", "-folder_name", "n/a"]
+          command: ["mpirun", "-np", "{{num_cpus}}", "python3", "/develop/code/src/3x3_pillar_sims/run_sim.py", "-neighbor_index", "{{n_index}}", "-path_output", "{{path_results}}", "-resim", "0", "-dataset", "n/a", "-folder_name", "n/a"]
           resources:
             limits:
               memory: {{num_mem_lim}}
