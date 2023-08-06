@@ -18,8 +18,12 @@ RUN conda update -y conda && \
     conda install -c conda-forge pandas -y && \
     conda install -c conda-forge ipympl jinja2 -y && \
     conda install -c conda-forge ffmpeg-python -y
+
 EXPOSE 8888
 
 WORKDIR /develop/results
-WORKDIR /develop/data
 WORKDIR /develop/code
+
+RUN git clone https://github.com/Kovaleski-Research-Lab/surrogate_model.git .
+
+WORKDIR /develop/code/src/3x3_pillar_sims

@@ -1,10 +1,3 @@
-import os
-import sys
-
-path = "~/Downloads/wow/hey/go.py"
-sys.path.append(path.strip(path.split("/")[-1]) + "utils")
-
-"""
 import subprocess
 
 from kubernetes import client, config
@@ -23,7 +16,4 @@ for job_name in current_group:
     subprocess.run(["kubectl", "delete", "job", job_name])
 
 print("\nCleaned up any jobs that include tag : %s\n" % "sim")
-"""
 
-print(sys.path)
-print(sys.argv[0])

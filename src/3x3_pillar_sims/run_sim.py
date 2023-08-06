@@ -11,9 +11,8 @@ import argparse
 import matplotlib.pyplot as plt
 
 import _3x3Pillars
-#sys.path.append("../")
-#from utils import parameter_manager
-import parameter_manager
+sys.path.append("../")
+from utils import parameter_manager
 
 def dump_geometry_image(model, pm):
     plt.figure()
