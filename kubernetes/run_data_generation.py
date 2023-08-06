@@ -148,9 +148,12 @@ def run_generation(params):
 
                 #pod_names = [item.metadata.name for item in pod_list.items]
                 pod_phases = [item.status.phase for item in pod_list.items]
-                pod_phases = [1 for ele in pod_phases if(ele == "Succeeded")]
+                pod_phases = [1 for ele in pod_phases if(ele == "Completed")]
 
-                print("Elapsed time (group %s): %s minutes" % (parallel_id, (wait_time_sec * k) / 60))
+                if(k == 0):
+                    print()
+
+                print("Elapsed time (group %s): %s minutes, %s / %s complete" % (parallel_id, (wait_time_sec * k) / 60, sum(pod_phases), params["num_parallel_ops"]))
 
                 if(sum(pod_phases) == params["num_parallel_ops"]):
                     break
