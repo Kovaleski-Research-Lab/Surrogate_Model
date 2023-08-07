@@ -13,22 +13,22 @@ from jinja2 import Environment, FileSystemLoader
 
 # Create: Response, Program Exit
 
-def exit_handler():
+def exit_handler(): # always run this script after this file ends.
 
-    config.load_kube_config()
+    config.load_kube_config()   # python can see the kube config now. now we can run API commands.
 
-    v1 = client.CoreV1Api()
+    v1 = client.CoreV1Api()   # initializing a tool to do kube stuff.
 
-    pod_list = v1.list_namespaced_pod(namespace = params["namespace"])
+    pod_list = v1.list_namespaced_pod(namespace = params["namespace"])    # get all pods currently running (1 pod generates a single meep sim) 
 
-    current_group = [ele.metadata.owner_references[0].name for ele in pod_list.items if(params["kill_tag"] in ele.metadata.name)]
+    current_group = [ele.metadata.owner_references[0].name for ele in pod_list.items if(params["kill_tag"] in ele.metadata.name)]    # getting the name of the pod
 
-    current_group = list(set(current_group))
+    current_group = list(set(current_group))    # remove any duplicates
 
     for job_name in current_group:
-        subprocess.run(["kubectl", "delete", "job", job_name])
+        subprocess.run(["kubectl", "delete", "job", job_name])    # delete the kube job (a.k.a. pod)
 
-    print("\nCleaned up any jobs that include tag : %s\n" % params["kill_tag"])
+    print("\nCleaned up any jobs that include tag : %s\n" % params["kill_tag"])   
 
 # Create: Results Folders
 
@@ -68,13 +68,7 @@ def load_file(path):
 
 def run_generation(params):
 
-    # Set kubernetes environment
-
-    #config.load_kube_config()
-
-    #v1 = client.CoreV1Api()
-
-    # Load template
+    # Load job template
 
     template = load_file(params["path_template"])
 
@@ -91,7 +85,7 @@ def run_generation(params):
 
     print("\nLaunching Data Generation Jobs")
 
-    group_id, parallel_id = 1, 1
+    group_id, parallel_id = 1, 1   # group id is job, parallel id is the batch
 
     while(group_id < params["num_sims"]):
 
@@ -99,9 +93,9 @@ def run_generation(params):
 
         # - Launch simulation job group
 
-        current_group = []
+        current_group = [] # list that holds all the job names
 
-        for i in range(params["num_parallel_ops"]):
+        for i in range(params["num_parallel_ops"]): 
 
             if(group_id + i > params["num_sims"]):
                 break
@@ -112,6 +106,7 @@ def run_generation(params):
 
             current_group.append(job_name)
 
+            # jinja stuff
             template_info = {"job_name": job_name, 
                              "n_index": str(group_id + i),
                              "num_cpus": str(params["num_cpus_per_op"]),
@@ -119,9 +114,10 @@ def run_generation(params):
                              "num_mem_req": str(params["num_mem_req"]),
                              "path_results": params["path_simulations"], "path_image": params["path_image"]}
 
+            # this is a jinja template.
             filled_template = template.render(template_info)
 
-            path_job = os.path.join(params["path_sim_job_files"], job_name + ".yaml")
+            path_job = os.path.join(params["path_sim_job_files"], job_name + ".yaml") 
 
             if(sys.platform == "win32"):
                 path_job = path_job.replace("\\", "/").replace("/", "\\")
@@ -143,29 +139,12 @@ def run_generation(params):
 
             time.sleep(wait_time_sec)
 
-            if(k % 2 == 0):
+            if(k % 2 == 0): # every 2 min including the 1st min, check progress
 
                 config.load_kube_config()
                 v1 = client.CoreV1Api()
                 pod_list = v1.list_namespaced_pod(namespace = params["namespace"])
             
-                """
-                success = 0
-
-                while(1):
-
-                    try:
-                        pod_list = v1.list_namespaced_pod(namespace = params["namespace"])
-                        success = 1
-                    except:
-                        print("\nError: Namespace pod list unauthorized...Retrying.\n")
-                        time.sleep(wait_time_sec)
-                        pass
-
-                    if(success):
-                        break
-                """
-
                 #pod_list = v1.list_namespaced_pod(namespace = params["namespace"])
                 #pod_names = [item.metadata.name for item in pod_list.items]
                 pod_phases = [item.status.phase for item in pod_list.items]
@@ -176,7 +155,7 @@ def run_generation(params):
 
                 print("Progressing group %s: Elapsed Time = %s minutes, Completion = %s / %s" % (parallel_id, (wait_time_sec * (k + 1)) / 60, sum(pod_phases), params["num_parallel_ops"]))
 
-                if(sum(pod_phases) == params["num_parallel_ops"]):
+                if(sum(pod_phases) == params["num_parallel_ops"]):  # we break out when this gets to 32
                     print()
                     break
             
@@ -236,7 +215,7 @@ if __name__ == "__main__":
 
     params = load_config(args["config"]) 
 
-    atexit.register(exit_handler)
+    atexit.register(exit_handler)  # this is how we clean up jobs. 
 
     run_generation(params)
     

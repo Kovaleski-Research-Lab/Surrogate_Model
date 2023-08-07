@@ -17,7 +17,7 @@ RUN conda update -y conda && \
     conda install -c conda-forge segmentation-models-pytorch -y && \
     conda install -c conda-forge pandas -y && \
     conda install -c conda-forge ipympl jinja2 -y && \
-    conda install -c conda-forge ffmpeg-python -y
+    conda install -c conda-forge ffmpeg-python kubernetes jinja2 -y
 
 EXPOSE 8888
 

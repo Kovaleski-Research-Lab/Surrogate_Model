@@ -10,7 +10,7 @@ path_image: docker.io/ctvqfq/bunny_ai:spie-1.1
 path_template: kube_files/templates/job.txt
 
 path_simulations: /develop/results
-path_sim_job_files: C:/Users/Slane/Downloads/sim_job_yamls
+path_sim_job_files: /develop/data/spie_journal_2023/kube_logs
 
 # Define Computing Environment
 # - num_mem_lim: limits of random access memory
@@ -20,13 +20,12 @@ path_sim_job_files: C:/Users/Slane/Downloads/sim_job_yamls
 # - num_cpus_total: number of cpus used at once in computing cluster, denote as c | c = a * b.
 
 num_mem_lim: 100G
-num_mem_req: 64G
+num_mem_req: 48G
 num_cpus_per_op: 32
 #num_parallel_ops: 64
 #num_cpus_total: 2048
-num_parallel_ops: 5
-num_cpus_total: 160
-
+num_parallel_ops: 64
+#num_cpus_total: 160
 
 namespace: gpn-mizzou-muem
 kill_tag: sim
