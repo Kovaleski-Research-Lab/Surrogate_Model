@@ -4,7 +4,14 @@
 
 Install kubernetes kubernetes on Ubuntu
 
-`sudo snap install kubectl --classic`
+- `sudo snap install kubectl --classic`
+- Verify installation with `kubectl`. This should show the command is recogized by system.
+  
+Setup config file for computing cluster
+
+- [Nautilus](https://portal.nrp-nautilus.io) is the computing cluster for this project. Make an account and login. Then download the config file and place inside of `~/.kube/` on the client machine.
+
+- Verify config file is setup correctly via `kubectl get pods`. It should not throw warnings or errors.  
 
 ## Data Generation Using Kubernetes
 
@@ -23,7 +30,8 @@ Monitor data generation job
 - `kubecel get pod` : shows all pods
 - `kubectl describe pod [pod_name]` : shows details of the creation process for a pod. Pods take time to launch.
     - `[pod_name]` is the name of the pod shown in `kubectl get pod` above
-   
+- Note: interactive pods only last 6 hours. If a pod expires, it needs to be deleted: `kubectl delete pod {pod_name}` and then recreated.
+  
 - Use an interactive pod to check what simulation files are being generated
   - `kubectl apply -f monitor_pod.yaml` : create the pod. Monitor creation with `kubectl describe pod monitor`.
   - `kubectl exec -it monitor -- /bin/bash` : enter the monitor pod as interactive root user.
