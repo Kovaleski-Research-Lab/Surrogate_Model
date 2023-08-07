@@ -1,5 +1,11 @@
 # SPIE Journal of Nano Photonics - Fall 2023 
 
+## Installing kubernetes 
+
+Install kubernetes kubernetes on Ubuntu
+
+`sudo snap install kubectl --classic`
+
 ## Data Generation Using Kubernetes
 
 Create storage volumes for storing our code and simulations
