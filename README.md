@@ -9,27 +9,25 @@ Install kubernetes kubernetes on Ubuntu
 ## Data Generation Using Kubernetes
 
 Create storage volumes for storing our code and simulations
-- `kubectl apply -f kube_files/storage/code.yaml`
 - `kubectl apply -f kube_files/storage/results.yaml`
 
 Verify creation of storage volumes
 - `kubectl get pvc`
 
 Launch data generation 
-- `kubectl apply -f launch_jobs.yaml`
+- `python run_data_generation.py -config config.yaml`
 
 Monitor data generation job
 - `kubecel get job` : shows all jobs
-- `kubectl describe job meep-controller` : shows details of the creation process for job meep-controller. Jobs take time to launch.
-  - This job lauches a pod. Monitor that pod progress with `kubectl describe pod [pod_name]`
-    - `[pod_name]` is the name of the pod shown in `kubectl describe job meep-controller` above
+  - Each job will spawn a pod (i.e., container) to process a simulation.
+- `kubecel get pod` : shows all pods
+- `kubectl describe pod [pod_name]` : shows details of the creation process for a pod. Pods take time to launch.
+    - `[pod_name]` is the name of the pod shown in `kubectl get pod` above
    
 - Use an interactive pod to check what simulation files are being generated
   - `kubectl apply -f monitor_pod.yaml` : create the pod. Monitor creation with `kubectl describe pod monitor`.
   - `kubectl exec -it monitor -- /bin/bash` : enter the monitor pod as interactive root user.
-  - `cat /develop/results/log.out` : show i/o from python job launcher
-  - `ls /develop/results/simulations` : show created simulation files
-  - `ls /develop/results/sim_job_files` : show created job files
+  - `ls /develop/results` : show created simulation files
 
 ## Repo Details
 
