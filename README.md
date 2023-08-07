@@ -4,7 +4,14 @@
 
 Install kubernetes kubernetes on Ubuntu
 
-`sudo snap install kubectl --classic`
+- `sudo snap install kubectl --classic`
+- Verify installation with `kubectl`. This should show the command is recogized by system.
+  
+Setup config file for computing cluster
+
+- [Nautilus](https://portal.nrp-nautilus.io) is the computing cluster for this project. Make an account and login. Then download the config file and place inside of `~/.kube/` on the client machine.
+
+- Verify config file is setup correctly via `kubectl get pods`. It should not throw warnings or errors.  
 
 ## Data Generation Using Kubernetes
 
