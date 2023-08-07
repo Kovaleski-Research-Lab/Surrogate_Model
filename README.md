@@ -30,7 +30,8 @@ Monitor data generation job
 - `kubecel get pod` : shows all pods
 - `kubectl describe pod [pod_name]` : shows details of the creation process for a pod. Pods take time to launch.
     - `[pod_name]` is the name of the pod shown in `kubectl get pod` above
-   
+- Note: interactive pods only last 6 hours. If a pod expires, it needs to be deleted: `kubectl delete pod {pod_name}` and then recreated.
+  
 - Use an interactive pod to check what simulation files are being generated
   - `kubectl apply -f monitor_pod.yaml` : create the pod. Monitor creation with `kubectl describe pod monitor`.
   - `kubectl exec -it monitor -- /bin/bash` : enter the monitor pod as interactive root user.
