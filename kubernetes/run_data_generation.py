@@ -70,9 +70,9 @@ def run_generation(params):
 
     # Set kubernetes environment
 
-    config.load_kube_config()
+    #config.load_kube_config()
 
-    v1 = client.CoreV1Api()
+    #v1 = client.CoreV1Api()
 
     # Load template
 
@@ -134,9 +134,10 @@ def run_generation(params):
 
             subprocess.run(["kubectl", "apply", "-f", path_job])
 
-        # - Wait until current simulation job group is completed. Checks every minute.
+        # - Wait until current simulation pod group is completed. Checks every minute.
 
-        k, wait_time_sec = 0, 60
+        k = 0
+        wait_time_sec = 60
 
         while(1):
 
@@ -144,8 +145,28 @@ def run_generation(params):
 
             if(k % 2 == 0):
 
+                config.load_kube_config()
+                v1 = client.CoreV1Api()
                 pod_list = v1.list_namespaced_pod(namespace = params["namespace"])
+            
+                """
+                success = 0
 
+                while(1):
+
+                    try:
+                        pod_list = v1.list_namespaced_pod(namespace = params["namespace"])
+                        success = 1
+                    except:
+                        print("\nError: Namespace pod list unauthorized...Retrying.\n")
+                        time.sleep(wait_time_sec)
+                        pass
+
+                    if(success):
+                        break
+                """
+
+                #pod_list = v1.list_namespaced_pod(namespace = params["namespace"])
                 #pod_names = [item.metadata.name for item in pod_list.items]
                 pod_phases = [item.status.phase for item in pod_list.items]
                 pod_phases = [1 for ele in pod_phases if(ele == "Succeeded")]
@@ -153,9 +174,10 @@ def run_generation(params):
                 if(k == 0):
                     print()
 
-                print("Progressing group %s: Elapsed Time = %s minutes, Completion = %s / %s" % (parallel_id, (wait_time_sec * k) / 60, sum(pod_phases), params["num_parallel_ops"]))
+                print("Progressing group %s: Elapsed Time = %s minutes, Completion = %s / %s" % (parallel_id, (wait_time_sec * (k + 1)) / 60, sum(pod_phases), params["num_parallel_ops"]))
 
                 if(sum(pod_phases) == params["num_parallel_ops"]):
+                    print()
                     break
             
             k += 1

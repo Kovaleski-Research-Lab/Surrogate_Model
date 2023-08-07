@@ -6,7 +6,9 @@ config.load_kube_config()
 
 v1 = client.CoreV1Api()
 
-pod_list = v1.list_namespaced_pod(namespace = "gpn-mizzou-muem")
+for i in range(1000):
+    pod_list = v1.list_namespaced_pod(namespace = "gpn-mizzou-muem")
+    print(i) 
 
 pod_phases = [item.status.phase for item in pod_list.items]
 output = [1 for ele in pod_phases if(ele == "Succeeded")]
