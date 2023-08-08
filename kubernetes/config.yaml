@@ -21,7 +21,7 @@ path_sim_job_files: /develop/data/spie_journal_2023/kube_logs
 
 num_mem_lim: 240G
 num_mem_req: 200G
-num_cpus_per_op: 32
+num_cpus_per_op: 48
 #num_parallel_ops: 64
 #num_cpus_total: 2048
 num_parallel_ops: 32
@@ -33,4 +33,4 @@ kill_tag: sim
 # Define Simulation
 
 num_sims: 500
-
+start_group_id: 64

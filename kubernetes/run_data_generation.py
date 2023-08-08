@@ -85,7 +85,7 @@ def run_generation(params):
 
     print("\nLaunching Data Generation Jobs")
 
-    group_id, parallel_id = 1, 1   # group id is job, parallel id is the batch
+    group_id, parallel_id = params["start_group_id"], 1   # group id is job, parallel id is the batch
 
     while(group_id < params["num_sims"]):
 
