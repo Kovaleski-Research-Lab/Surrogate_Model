@@ -49,7 +49,7 @@ path_model: 'model_checkpoints/'
 path_results: 'results/'
 path_checkpoint: 'model_checkpoints/model_baseline_phases_derivatives'
 path_resims: 'resims/'
-
+path_dataset: 
 #--------------------------------
 #       Physical Params
 #--------------------------------

@@ -666,4 +666,4 @@ if __name__=="__main__":
     params = yaml.load(open('../config.yaml'), Loader=yaml.FullLoader)
     pm = ParameterManager(params=params)
     print(pm.resolution)
-
+    embed()
