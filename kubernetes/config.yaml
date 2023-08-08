@@ -6,7 +6,7 @@
 # - path_simulations: path to store simulations (pvc)
 # - path_sim_job_files: path to store generated job files (local)
 
-path_image: docker.io/ctvqfq/bunny_ai:spie-1.1
+path_image: docker.io/ctvqfq/bunny_ai:spie-1.2
 path_template: kube_files/templates/job.txt
 
 path_simulations: /develop/results
@@ -19,12 +19,12 @@ path_sim_job_files: /develop/data/spie_journal_2023/kube_logs
 # - num_parallel_ops: number of simulations happening in parallel, Denoate as b.
 # - num_cpus_total: number of cpus used at once in computing cluster, denote as c | c = a * b.
 
-num_mem_lim: 100G
-num_mem_req: 48G
+num_mem_lim: 240G
+num_mem_req: 200G
 num_cpus_per_op: 32
 #num_parallel_ops: 64
 #num_cpus_total: 2048
-num_parallel_ops: 64
+num_parallel_ops: 32
 #num_cpus_total: 160
 
 namespace: gpn-mizzou-muem

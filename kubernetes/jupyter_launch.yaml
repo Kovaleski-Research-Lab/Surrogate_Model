@@ -1,20 +1,20 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: monitor
+  name: jupyter-testing
 spec:
   containers:
-    - name: monitor
+    - name: jupyter-testing
       image: docker.io/ctvqfq/bunny_ai:spie-1.2
       stdin: True
       tty: True
       resources:
         limits:
-          memory: 8G
-          cpu: 6
+          memory: 16G
+          cpu: 12
         requests:
-          memory: 4G
-          cpu: 6
+          memory: 12G
+          cpu: 12
       volumeMounts:
         - name: meep-results
           mountPath: /develop/results
