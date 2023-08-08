@@ -20,8 +20,8 @@ cell_min = 0
 cell_max = 4.92
 
 ## These values are also hardcorded, but can be obtained dynamically
-output_min = 0   
-output_max = 395  # data['eps_data'].squeeze().shape[2]
+pix_min = 0   
+pix_max = 395  # data['eps_data'].squeeze().shape[2]
 
 ## meep's geometries are defined with (0,0,0) at the origin. These values are obtained by placing the geometries on a plane with z=0 at the bottom
 pillar_top = 2.58  #um 
@@ -34,7 +34,7 @@ def convert(value, min_value, max_value, new_min, new_max):
     converted_value = ((value - min_value) / (max_value - min_value)) * (new_max - new_min) + new_min
     return converted_value
 
-converted_values = [convert(value, cell_min, cell_max, output_min, output_max) for value in to_convert]
+converted_values = [convert(value, cell_min, cell_max, pix_min, pix_max) for value in to_convert]
 
 for original_value, converted_value in zip(to_convert, converted_values):
     print(f"Original Value in microns: {original_value}, Converted Value in pixels: {converted_value}")
