@@ -169,9 +169,9 @@ def run_generation(params):
                         if(i == index):
                             then = item.status.start_time
                             now = datetime.datetime.now(tzutc())
-                            time = pod_times_min.append((now - then).total_seconds() / 60)
+                            diff_time = pod_times_min.append((now - then).total_seconds() / 60)
 
-                            if(time >= params["kill_time_min"]):
+                            if(diff_time >= params["kill_time_min"]):
                                 job_name = current_group[i]
                                 print("Removing job: %s" % job_name)
                                 subprocess.run(["kubectl", "delete", "job", job_name])
