@@ -153,26 +153,25 @@ def run_generation(params):
                 if(k == 0):
                     print()
 
-                if(k != 0):
+                pod_statuses = [item.status.phase for item in pod_list.items]
+                pod_phases = [1 for ele in pod_statuses if(ele == "Succeeded")]
 
-                    pod_statuses = [item.status.phase for item in pod_list.items]
-                    pod_phases = [1 for ele in pod_statuses if(ele == "Succeeded")]
+                pod_times_min = []
+                for item, phase in zip(pod_list.items, pod_phases):
+                    then = item.status.start_time
+                    now = datetime.datetime.now(tzutc())
+                    time = pod_times_min.append((now - then).total_seconds() / 60) if(phase == "Pending") else 0
+                    pod_times.append(time)
 
-                    pod_times_min = []
-                    for item in pod_list.items:
-                        then = item.status.start_time
-                        now = datetime.datetime.now(tzutc())
-                        pod_times_min.append((now - then).total_seconds() / 60)
-
-                    hit_list = [i for i, time in enumerate(pod_times_min) if(time >= params["kill_time_min"])]
-     
-                    for i, job_name in enumerate(current_group):
-                        if(i in hit_list):
-                            print("Removing job: %s" % job_name)
-                            subprocess.run(["kubectl", "delete", "job", job_name])
-                            current_group.pop(i)
-                            pod_statuses.pop(i)
-                            pod_phases.pop(i)
+                hit_list = [i for i, time in enumerate(pod_times_min) if(time >= params["kill_time_min"])]
+ 
+                for i, job_name in enumerate(current_group):
+                    if(i in hit_list):
+                        print("Removing job: %s" % job_name)
+                        subprocess.run(["kubectl", "delete", "job", job_name])
+                        current_group.pop(i)
+                        pod_statuses.pop(i)
+                        pod_phases.pop(i)
 
                 #print("Progressing group %s: Elapsed Time = %s minutes, Completion = %s / %s" % (parallel_id, (wait_time_sec * (k + 1)) / 60, sum(pod_phases), params["num_parallel_ops"]))
 
