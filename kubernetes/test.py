@@ -45,8 +45,13 @@ v1 = client.CoreV1Api()
 
 pod_list = v1.list_namespaced_pod(namespace = "gpn-mizzou-muem")
 
-pod_names = [item.metadata.name for item in pod_list.items]
-pod_phases = [item.status.phase for item in pod_list.items]
+pod_list = [item for item in pod_list.items if("sim" in item.metadata.name)]
+pod_names = [item.metadata.name for item in pod_list]
+pod_phases = [item.status.phase for item in pod_list]
+
+from IPython import embed
+embed()
+exit()
 
 pod_times_min = []
 for item in pod_list.items:
@@ -54,12 +59,6 @@ for item in pod_list.items:
     then = item.status.start_time
     now = datetime.datetime.now(tzutc())
 
-    print("\n")
-    print(item.metadata.name)
-    print("\n")
-    print(then, now)
-
-    
     try:
         pod_times_min.append((now - then).total_seconds() / 60)
     except:

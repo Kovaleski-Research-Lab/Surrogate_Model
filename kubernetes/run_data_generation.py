@@ -160,6 +160,8 @@ def run_generation(params):
                 pod_progress = [1 if(phase == "Succeeded") else 0 for phase in pod_statuses]
                 hit_list =  [i for i, phase in enumerate(pod_statuses) if(phase == "Pending")]
 
+                print("\nProgress: %s queued jobs\n" % len(pod_statuses))
+
                 ##########
 
                 for index in hit_list:
