@@ -157,7 +157,7 @@ def run_generation(params):
                 pod_name = [item.metadata.name for item in pod_list]
                 pod_statuses = [item.status.phase for item in pod_list]
 
-                pod_progress = [1 for phase in pod_statuses if(phase == "Succeeded")]
+                pod_progress = [1 if(phase == "Succeeded") else 0 for phase in pod_statuses]
                 hit_list =  [i for i, phase in enumerate(pod_statuses) if(phase == "Pending")]
 
                 ##########
@@ -169,7 +169,7 @@ def run_generation(params):
                         if(i == index):
                             then = item.status.start_time
                             now = datetime.datetime.now(tzutc())
-                            diff_time = pod_times_min.append((now - then).total_seconds() / 60)
+                            diff_time = (now - then).total_seconds() / 60
 
                             if(diff_time >= params["kill_time_min"]):
                                 job_name = current_group[i]
