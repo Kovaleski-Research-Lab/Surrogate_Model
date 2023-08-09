@@ -28,7 +28,7 @@ num_parallel_ops: 32
 #num_cpus_total: 160
 
 namespace: gpn-mizzou-muem
-kill_time_min: 60
+kill_time_min: 30
 kill_tag: sim
 
 # Define Simulation

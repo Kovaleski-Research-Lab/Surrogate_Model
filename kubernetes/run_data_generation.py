@@ -104,7 +104,7 @@ def run_generation(params):
 
             # -- Configure simulation job
 
-            job_name = "sim-%s" % (str(group_id + i).zfill(6))
+            job_name = "%s-%s" % (params["kill_tag"], str(group_id + i).zfill(6))
 
             current_group.append(job_name)
 
@@ -147,16 +147,24 @@ def run_generation(params):
                 v1 = client.CoreV1Api()
                 pod_list = v1.list_namespaced_pod(namespace = params["namespace"], timeout_seconds = 300, limit = params["num_parallel_ops"])
             
+                ##########
+ 
                 if(k == 0):
                     print()
 
-                pod_statuses = [item.status.phase for item in pod_list.items]
-                pod_progress = [1 for ele in pod_statuses if(ele == "Succeeded")]
-                hit_list =  [i for i, ele in enumerate(pod_statuses) if(ele == "Pending")]
+                pod_list = [item for item in pod_list.items if(params["kill_tag"] in item.metadata.name)]
+                
+                pod_name = [item.metadata.name for item in pod_list]
+                pod_statuses = [item.status.phase for item in pod_list]
+
+                pod_progress = [1 for phase in pod_statuses if(phase == "Succeeded")]
+                hit_list =  [i for i, phase in enumerate(pod_statuses) if(phase == "Pending")]
+
+                ##########
 
                 for index in hit_list:
 
-                    for i, (item, status) in enumerate(zip(pod_list.items, pod_statuses)):
+                    for i, item in enumerate(pod_list):
 
                         if(i == index):
                             then = item.status.start_time
