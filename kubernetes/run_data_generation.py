@@ -6,8 +6,10 @@ import yaml
 import time
 import shutil
 import atexit
+import datetime
 import subprocess
 
+from dateutil.tz import tzutc
 from kubernetes import client, config
 from jinja2 import Environment, FileSystemLoader
 
@@ -147,15 +149,36 @@ def run_generation(params):
             
                 #pod_list = v1.list_namespaced_pod(namespace = params["namespace"])
                 #pod_names = [item.metadata.name for item in pod_list.items]
-                pod_phases = [item.status.phase for item in pod_list.items]
-                pod_phases = [1 for ele in pod_phases if(ele == "Succeeded")]
 
+                pod_statuses = [item.status.phase for item in pod_list.items]
+                pod_phases = [1 for ele in pod_statuses if(ele == "Succeeded")]
+
+                pod_times_min = []
+                for item in pod_list.items:
+                    then = item.status.start_time
+                    now = datetime.datetime.now(tzutc())
+                    pod_times_min.append((now - then).total_seconds() / 60)
+
+                hit_list = [i for i, time in enumerate(pod_times_min) if(time >= params["kill_time_min"])]
+ 
                 if(k == 0):
                     print()
 
-                print("Progressing group %s: Elapsed Time = %s minutes, Completion = %s / %s" % (parallel_id, (wait_time_sec * (k + 1)) / 60, sum(pod_phases), params["num_parallel_ops"]))
+                for i, job_name in enumerate(current_group):
+                    if(i in hit_list):
+                        print("Removing job: %s" % job_name)
+                        subprocess.run(["kubectl", "delete", "job", job_name])
+                        current_group.pop(i)
+                        pod_statuses.pop(i)
+                        pod_phases.pop(i)
 
-                if(sum(pod_phases) == params["num_parallel_ops"]):  # we break out when this gets to 32
+                #print("Progressing group %s: Elapsed Time = %s minutes, Completion = %s / %s" % (parallel_id, (wait_time_sec * (k + 1)) / 60, sum(pod_phases), params["num_parallel_ops"]))
+
+                print("Progressing group %s: Elapsed Time = %s minutes, Completion = %s / %s" % (parallel_id, (wait_time_sec * (k + 1)) / 60, sum(pod_phases), len(pod_statuses)))
+
+                #if(sum(pod_phases) == params["num_parallel_ops"]):  # we break out when this gets to 32
+                
+                if(sum(pod_phases) == len(pod_statuses)):  # we break out when this gets to 32
                     print()
                     break
             
