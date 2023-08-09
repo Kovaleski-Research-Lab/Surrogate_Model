@@ -53,7 +53,19 @@ for item in pod_list.items:
 
     then = item.status.start_time
     now = datetime.datetime.now(tzutc())
-    pod_times_min.append((now - then).total_seconds() / 60)
+
+    print("\n")
+    print(item.metadata.name)
+    print("\n")
+    print(then, now)
+
+    
+    try:
+        pod_times_min.append((now - then).total_seconds() / 60)
+    except:
+        from IPython import embed
+        embed()
+        exit()
 
 print("Pod Activity")
 

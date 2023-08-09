@@ -167,12 +167,18 @@ def run_generation(params):
                     for i, item in enumerate(pod_list):
 
                         if(i == index):
+
+                            job_name = current_group[i]
                             then = item.status.start_time
                             now = datetime.datetime.now(tzutc())
-                            diff_time = (now - then).total_seconds() / 60
+
+                            try:
+                                diff_time = (now - then).total_seconds() / 60
+                            except:
+                                print("Job %s is still unscheduled" % job_name)
+                                diff_time = 0
 
                             if(diff_time >= params["kill_time_min"]):
-                                job_name = current_group[i]
                                 print("Removing job: %s" % job_name)
                                 subprocess.run(["kubectl", "delete", "job", job_name])
                                 current_group.pop(i)
