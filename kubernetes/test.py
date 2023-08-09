@@ -43,7 +43,9 @@ config.load_kube_config()
 
 v1 = client.CoreV1Api()
 
-pod_list = v1.list_namespaced_pod(namespace = "gpn-mizzou-muem")
+pod_list = v1.list_namespaced_pod(namespace = "gpn-mizzou-muem", timeout_seconds = 300, limit = 32)
+#pod_list = v1.list_namespaced_pod(namespace = params["namespace"], timeout_seconds = 300, limit = params["num_parallel_ops"])
+
 
 pod_list = [item for item in pod_list.items if("sim" in item.metadata.name)]
 pod_names = [item.metadata.name for item in pod_list]

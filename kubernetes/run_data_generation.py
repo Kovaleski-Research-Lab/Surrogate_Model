@@ -145,7 +145,7 @@ def run_generation(params):
 
                 config.load_kube_config()
                 v1 = client.CoreV1Api()
-                pod_list = v1.list_namespaced_pod(namespace = params["namespace"], timeout_seconds = 300, limit = params["num_parallel_ops"])
+                pod_list = v1.list_namespaced_pod(namespace = params["namespace"], timeout_seconds = 300)
             
                 ##########
  
@@ -153,14 +153,12 @@ def run_generation(params):
                     print()
 
                 pod_list = [item for item in pod_list.items if(params["kill_tag"] in item.metadata.name)]
-                
+
                 pod_name = [item.metadata.name for item in pod_list]
                 pod_statuses = [item.status.phase for item in pod_list]
 
                 pod_progress = [1 if(phase == "Succeeded") else 0 for phase in pod_statuses]
                 hit_list =  [i for i, phase in enumerate(pod_statuses) if(phase == "Pending")]
-
-                print("\nProgress: %s queued jobs\n" % len(pod_statuses))
 
                 ##########
 
@@ -177,16 +175,15 @@ def run_generation(params):
                             try:
                                 diff_time = (now - then).total_seconds() / 60
                             except:
-                                print("Job %s is still unscheduled" % job_name)
                                 diff_time = 0
 
                             if(diff_time >= params["kill_time_min"]):
-                                print("Removing job: %s" % job_name)
+                                print("\nRemoving job: %s\n" % job_name)
                                 subprocess.run(["kubectl", "delete", "job", job_name])
                                 current_group.pop(i)
                                 pod_statuses.pop(i)
                                 pod_progress.pop(i)
-                               
+                
                 #print("Progressing group %s: Elapsed Time = %s minutes, Completion = %s / %s" % (parallel_id, (wait_time_sec * (k + 1)) / 60, sum(pod_progress), params["num_parallel_ops"]))
 
                 print("Progressing group %s: Elapsed Time = %s minutes, Completion = %s / %s" % (parallel_id, (wait_time_sec * (k + 1)) / 60, sum(pod_progress), len(pod_statuses)))
