@@ -53,7 +53,6 @@ for item in pod_list.items:
 
     then = item.status.start_time
     now = datetime.datetime.now(tzutc())
-
     pod_times_min.append((now - then).total_seconds() / 60)
 
 print("Pod Activity")
