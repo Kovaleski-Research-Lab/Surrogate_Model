@@ -141,45 +141,43 @@ def run_generation(params):
 
             time.sleep(wait_time_sec)
 
-            if(k % 5 == 0): # every 2 min including the 1st min, check progress
+            if(k % 2 == 0): # every 2 min including the 1st min, check progress
 
                 config.load_kube_config()
                 v1 = client.CoreV1Api()
                 pod_list = v1.list_namespaced_pod(namespace = params["namespace"], timeout_seconds = 300, limit = params["num_parallel_ops"])
             
-                #pod_list = v1.list_namespaced_pod(namespace = params["namespace"])
-                #pod_names = [item.metadata.name for item in pod_list.items]
-
                 if(k == 0):
                     print()
 
                 pod_statuses = [item.status.phase for item in pod_list.items]
-                pod_phases = [1 for ele in pod_statuses if(ele == "Succeeded")]
+                pod_progress = [1 for ele in pod_statuses if(ele == "Succeeded")]
+                hit_list =  [i for i, ele in enumerate(pod_statuses) if(ele == "Pending")]
 
-                pod_times_min = []
-                for item, phase in zip(pod_list.items, pod_phases):
-                    then = item.status.start_time
-                    now = datetime.datetime.now(tzutc())
-                    time = pod_times_min.append((now - then).total_seconds() / 60) if(phase == "Pending") else 0
-                    pod_times.append(time)
+                for index in hit_list:
 
-                hit_list = [i for i, time in enumerate(pod_times_min) if(time >= params["kill_time_min"])]
- 
-                for i, job_name in enumerate(current_group):
-                    if(i in hit_list):
-                        print("Removing job: %s" % job_name)
-                        subprocess.run(["kubectl", "delete", "job", job_name])
-                        current_group.pop(i)
-                        pod_statuses.pop(i)
-                        pod_phases.pop(i)
+                    for i, (item, status) in enumerate(zip(pod_list.items, pod_statuses)):
 
-                #print("Progressing group %s: Elapsed Time = %s minutes, Completion = %s / %s" % (parallel_id, (wait_time_sec * (k + 1)) / 60, sum(pod_phases), params["num_parallel_ops"]))
+                        if(i == index):
+                            then = item.status.start_time
+                            now = datetime.datetime.now(tzutc())
+                            time = pod_times_min.append((now - then).total_seconds() / 60)
 
-                print("Progressing group %s: Elapsed Time = %s minutes, Completion = %s / %s" % (parallel_id, (wait_time_sec * (k + 1)) / 60, sum(pod_phases), len(pod_statuses)))
+                            if(time >= params["kill_time_min"]):
+                                job_name = current_group[i]
+                                print("Removing job: %s" % job_name)
+                                subprocess.run(["kubectl", "delete", "job", job_name])
+                                current_group.pop(i)
+                                pod_statuses.pop(i)
+                                pod_progress.pop(i)
+                               
+                #print("Progressing group %s: Elapsed Time = %s minutes, Completion = %s / %s" % (parallel_id, (wait_time_sec * (k + 1)) / 60, sum(pod_progress), params["num_parallel_ops"]))
 
-                #if(sum(pod_phases) == params["num_parallel_ops"]):  # we break out when this gets to 32
+                print("Progressing group %s: Elapsed Time = %s minutes, Completion = %s / %s" % (parallel_id, (wait_time_sec * (k + 1)) / 60, sum(pod_progress), len(pod_statuses)))
+
+                #if(sum(pod_progress) == params["num_parallel_ops"]):  # we break out when this gets to 32
                 
-                if(sum(pod_phases) == len(pod_statuses)):  # we break out when this gets to 32
+                if(sum(pod_progress) == len(pod_statuses)):  # we break out when this gets to 32
                     print()
                     break
             
