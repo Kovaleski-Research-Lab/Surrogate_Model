@@ -17,10 +17,8 @@ from utils import parameter_manager
 
 def create_folder(path):
 
-    if(os.path.exists(path)):
-        shutil.rmtree(path)
-
-    os.makedirs(path)
+    if(not(os.path.exists(path))):
+        os.makedirs(path)
 
 def dump_geometry_image(model, pm):
     plt.figure()
