@@ -10,7 +10,7 @@ spec:
         - name: {{job_name}}
           image: {{path_image}}
           command: ["/bin/sh", "-c"]
-          args: ["git clone https://github.com/Kovaleski-Research-Lab/surrogate_model.git .; cd /develop/code/src/3x3_pillar_sims; mpirun -np {{num_cpus}} python3 /develop/code/src/3x3_pillar_sims/run_sim.py -neighbor_index {{n_index}} -path_output {{path_results}} -resim 0 -dataset n/a -folder_name n/a"]
+          args: ["git clone https://github.com/Kovaleski-Research-Lab/surrogate_model.git .; cd /develop/code/src/3x3_pillar_sims; mpirun -np {{num_cpus}} python3 /develop/code/src/3x3_pillar_sims/run_sim.py -neighbor_index {{n_index}} -path_out_sims {{path_sims}} -path_out_logs {{path_logs}} -resim 0"]
           resources:
             limits:
               memory: {{num_mem_lim}}

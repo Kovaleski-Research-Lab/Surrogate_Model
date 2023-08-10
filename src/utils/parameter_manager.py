@@ -197,6 +197,7 @@ class ParameterManager():
             
             self.path_dataset = params['path_dataset']
 
+
         except Exception as e:
             logging.error(e)
             traceback.print_exc()

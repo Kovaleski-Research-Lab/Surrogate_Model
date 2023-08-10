@@ -2,6 +2,7 @@ import sys
 import logging
 import time
 import os
+import shutil
 from IPython import embed
 import yaml
 import meep as mp
@@ -14,6 +15,13 @@ import _3x3Pillars
 sys.path.append("../")
 from utils import parameter_manager
 
+def create_folder(path):
+
+    if(os.path.exists(path)):
+        shutil.rmtree(path)
+
+    os.makedirs(path)
+
 def dump_geometry_image(model, pm):
     plt.figure()
     plot_plane = mp.Volume(center=mp.Vector3(0,0,0), size=mp.Vector3(pm.cell_x, 0, pm.cell_z))    
@@ -23,7 +31,7 @@ def dump_geometry_image(model, pm):
 def dump_data(neighbor_index, data, pm):
     
     #path_save = "/develop/data/spie_journal_2023"
-    folder_path = pm.path_dataset
+    #folder_path = pm.path_dataset
     #folder_name = "gaussian_dataset"
     #folder_path = os.path.join(path_save, folder_name)
 
@@ -33,11 +41,19 @@ def dump_data(neighbor_index, data, pm):
     #else:
     #    print("Folder path already exists")
 
-    sim_name = "%s.pkl" % (str(neighbor_index).zfill(6))
-    filename = os.path.join(folder_path, sim_name)
+    folder_path_sims = pm.path_dataset
 
-    with open(filename, "wb") as f:
+    sim_name = "%s.pkl" % (str(neighbor_index).zfill(6))
+    filename_sim = os.path.join(folder_path_sims, sim_name)
+
+    with open(filename_sim, "wb") as f:
         pickle.dump(data,f)
+   
+    # Make sure pickle is written  
+
+    time.sleep(60)
+    
+    print("\nEverything done\n")
 
 def run(radii_list, neighbor_index, pm, folder_name=None, dataset=None):
 
@@ -128,6 +144,7 @@ def run(radii_list, neighbor_index, pm, folder_name=None, dataset=None):
         filename = os.path.join(path_resims, eval_name)
         with open(filename, "wb") as f:
             pickle.dump(data, f)
+
     #dump_geometry_image(model, pm)
 if __name__=="__main__":
 
@@ -136,19 +153,38 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-neighbor_index", type=int, help="The index matching the index in radii_neighbors")
     parser.add_argument("-resim", type=int, help="True if launching resims, False if generating data")
+    parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to")
+    parser.add_argument("-path_out_logs", help="This is the path that i/o logs get dumped to")
 
-    parser.add_argument("-folder_name", help="Contains info about the model")
-    parser.add_argument("-dataset", help="Train or Valid")
-    parser.add_argument("-path_output", help="This is the path that simulations get dumped to")
+    parser.add_argument("-folder_name", help="Contains info about the model", default = None)
+    parser.add_argument("-dataset", help="Train or Valid", default = None)
 
     args = parser.parse_args()
     idx = args.neighbor_index
     resim = args.resim
-    params['path_dataset'] = args.path_output
-    # if resim is false then we are generating data.
-    pm = parameter_manager.ParameterManager(params=params)
+    params['path_dataset'] = args.path_out_sims
+
+    # Setup i/o recording
+
+    folder_path_logs = args.path_out_logs
+
+    create_folder(folder_path_logs)
+
+    log_name = "%s.log" % (str(idx).zfill(6))
+    filename_log = os.path.join(folder_path_logs, log_name)
+
+    io_log = open(filename_log, "w")
     
+    sys.stdout = io_log
+
+    # Run experiment
+ 
+    pm = parameter_manager.ParameterManager(params=params)
+
     #embed()
+
+    # if resim is false then we are generating data.
+
     if(resim == 0):
          
         neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
@@ -174,3 +210,4 @@ if __name__=="__main__":
         radii_list = mapping.phase_to_radii(phases)
         run(radii_list, idx, pm, folder_name, dataset)
 
+    io_log.close()
