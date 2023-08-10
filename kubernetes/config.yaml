@@ -10,6 +10,7 @@ path_image: docker.io/ctvqfq/bunny_ai:spie-1.2
 path_template: kube_files/templates/job.txt
 
 path_simulations: /develop/results
+path_logs: /develop/results/current_logs
 path_sim_job_files: /develop/data/spie_journal_2023/kube_logs
 
 # Define Computing Environment

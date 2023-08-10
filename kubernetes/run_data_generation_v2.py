@@ -112,8 +112,7 @@ def run_generation(params):
                                  "num_cpus": str(params["num_cpus_per_op"]),
                                  "num_mem_lim": str(params["num_mem_lim"]),
                                  "num_mem_req": str(params["num_mem_req"]),
-                                 "path_sims": params["path_simulations"], "path_image": params["path_image"],
-                                 "path_logs": os.path.join(params["path_simulations"], "current_logs")}
+                                 "path_sims": params["path_simulations"], "path_image": params["path_image"], "path_logs": params["path_logs"]}
 
                 filled_template = template.render(template_info)
 
