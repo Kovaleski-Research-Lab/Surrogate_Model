@@ -152,7 +152,7 @@ if __name__=="__main__":
     parser.add_argument("-index", type=int, help="The index matching the index in radii_neighbors")
     parser.add_argument("-resim", type=int, help="True if launching resims, False if generating data")
     parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to")
-    parser.add_argument("-path_out_logs", help="This is the path that i/o logs get dumped to")
+    #parser.add_argument("-path_out_logs", help="This is the path that i/o logs get dumped to")
 
     #parser.add_argument("-folder_name", help="Contains info about the model", default = None)
     #parser.add_argument("-dataset", help="Train or Valid", default = None)

@@ -25,7 +25,7 @@ num_mem_req: 200G
 num_cpus_per_op: 40
 #num_parallel_ops: 64
 #num_cpus_total: 2048
-num_parallel_ops: 32
+num_parallel_ops: 5
 #num_cpus_total: 160
 
 namespace: gpn-mizzou-muem
