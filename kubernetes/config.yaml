@@ -23,9 +23,8 @@ path_sim_job_files: /develop/data/spie_journal_2023/kube_logs
 num_mem_lim: 240G
 num_mem_req: 200G
 num_cpus_per_op: 40
-#num_parallel_ops: 64
 #num_cpus_total: 2048
-num_parallel_ops: 5
+num_parallel_ops: 32
 #num_cpus_total: 160
 
 namespace: gpn-mizzou-muem
@@ -34,5 +33,5 @@ kill_tag: sim
 
 # Define Simulation
 
-num_sims: 1000
+num_sims: 1400 # this is the ending index
 start_group_id: 976
