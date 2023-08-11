@@ -70,9 +70,9 @@ def run(params):
                           check_val_every_n_epoch = pm.valid_rate, callbacks = [checkpoint_callback])
 
     # Train
-    trainer.fit(model,data)
-    trainer.test(model, dataloaders=[data.val_dataloader(),data.train_dataloader()])
+    trainer.fit(model,data) # this calls train_step() and valid_step()
+    trainer.test(model, dataloaders=[data.val_dataloader(),data.train_dataloader()]) # this calls model.test_step. 
 
 
     # Dump config
-    yaml.dump(params, open(os.path.join(pm.path_root, f'{pm.path_results}/params.yaml'), 'w'))
+    yaml.dump(params, open(os.path.join(pm.path_root, f'{pm.path_results}/params.yaml'),'w'))

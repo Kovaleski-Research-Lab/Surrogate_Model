@@ -34,5 +34,5 @@ kill_tag: sim
 
 # Define Simulation
 
-num_sims: 500
-start_group_id: 186
+num_sims: 1000
+start_group_id: 482

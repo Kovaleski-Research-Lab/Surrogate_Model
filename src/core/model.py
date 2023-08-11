@@ -24,7 +24,7 @@ from pytorch_lightning import LightningModule
 from core import conv_upsample
 
 
-class CAI_Model(LightningModule):
+class SurrogateModel(LightningModule):
     def __init__(self, params_model, params_propagator):
         super().__init__()
  
@@ -47,7 +47,7 @@ class CAI_Model(LightningModule):
         self.num_phase = 9
 
         self.select_model()
-        self.create_propagation_layer(params_propagator)
+        #self.create_propagation_layer(params_propagator)
 
         # - Creating domain bounds for phase parameters
         #self.constrain_phase = torch.nn.Sigmoid()
@@ -74,7 +74,7 @@ class CAI_Model(LightningModule):
         self.train_deriv_predictions = []
         self.train_deriv_truth = []
 
-        # for resim 
+        # for resim -- these get populated at the very end. change this
         self.val_phase_pred_resim = []
         self.val_phase_truth_resim = []
         self.val_nf_pred_resim = []
@@ -102,10 +102,10 @@ class CAI_Model(LightningModule):
 
         self.save_hyperparameters()
 
-    def constrain_phase(self, phase):
+    def constrain_phase(self, phase): # is this where we do phase wrapping? 
         return torch.nn.functional.tanh(phase)
 
-    def constrain_derivative(self, der):
+    def constrain_derivative(self, der): # BAD. they are analytically calculated.
         return torch.nn.functional.tanh(der)
 
     def create_propagation_layer(self, params_propagator):
@@ -126,7 +126,7 @@ class CAI_Model(LightningModule):
         #model = model.float()
         self.encoder = model.encoder
         self.decoder = model.decoder
-        self.seg_head = model.segmentation_head
+        self.seg_head = model.segmentation_head # encoder - decoder - segmentation head (takes output shape of decoder and makes a final decision. probs an MLP)
 
         # - Create first and last layer of unet to handle non-expected inputs
 
@@ -158,38 +158,45 @@ class CAI_Model(LightningModule):
         # the features right before this MLP to some basis set (modes). We can then pull out
         # information about the modes while still fulfilling the aim of inverse design.
 
-        num_features = self.encoder(temp)[-1].view(-1).shape[0]
+        num_features = self.encoder(temp)[-1].view(-1).shape[0]    # what are latent space shapes? run encoder with an example input and figure out the number of features. insert an MLP (nn.seq) - take that output and converts it to the shape of the latent space
         self.encode_phase = torch.nn.Sequential(torch.nn.Linear(num_features, 512),
                                                 torch.nn.ReLU(),
-                                                torch.nn.Linear(512, self.num_phase))
+                                                torch.nn.Linear(512, self.num_phase))  # num_phases sets the size of the latent space
 
-        self.decode_phase = torch.nn.Sequential(torch.nn.Linear(self.num_phase, 512),
+        #self.encode_modes... we would take the modes and feed them into the phases (so you have two MLPs in succession) - each output of the MLPs means somethign different
+
+        self.decode_phase = torch.nn.Sequential(torch.nn.Linear(self.num_phase, 512), 
                                                 torch.nn.ReLU(),
                                                 torch.nn.Linear(512, num_features))
 
+        #self.decode_modes... might take phases back up to mode size 
+
+        # this lets us do alternating optimization - particularly, we are in the decoder stage. learning is halted for both phase and deriv. (turning grads off, not the layers. still making predictions)
+        # we are making a forward pass, and we are making a partial backward pass. it's partial because learning is only on for the decoder.
         if self.freeze_encoder:
-            for p in self.encoder.parameters():
+            for p in self.encoder.parameters():  # for every param in encoder, set grads to false. (turn off learning for the encoder)
                 p.requires_grad = False
-            for p in self.first.parameters():
+            for p in self.first.parameters():  # this is the "first" layer - se thtose to false too.
                 p.requires_grad = False
-            for p in self.encode_phase.parameters():
+            for p in self.encode_phase.parameters():   # set all the params in the MLP to false. also turn off learnign for the MLP.
                 p.requires_grad = False
 
-    def ae_loss(self, preds, labels, choice):
+    def ae_loss(self, preds, labels, choice): # ae=autoencoder. this chooses what loss func we use (used for other stuff besides ae) we need to add earth mover's distance
         if(choice == 0):
             fn = torch.nn.MSELoss()
             loss = fn(preds, labels)
-        else:
+        elif(choice == 1):
             fn = PeakSignalNoiseRatio()
             loss = 1 / (1 + fn(preds, labels))
-
+        else:
+            pass # make it earth movers distance 
         return loss
 
     def objective(self, batch, predictions, alpha = 1, beta = 1, gamma = 1, delta = 1):
 
         near_fields, far_fields, radii, phases, derivatives = batch
 
-        near_fields = near_fields[:,1,:,:,:].float().squeeze()
+        near_fields = near_fields[:,1,:,:,:].float().squeeze() # 1=y component
         far_fields = far_fields[:,1,:,:,:].float().squeeze()
         radii = radii.squeeze()
         phases = phases.squeeze()
@@ -199,10 +206,10 @@ class CAI_Model(LightningModule):
 
         #Training: Phase, Curvature, Efield
         
-        near_field_loss = self.ae_loss(pred_near_fields.squeeze(), near_fields, choice = 0)
+        near_field_loss = self.ae_loss(pred_near_fields.squeeze(), near_fields, choice = 0) # use EMV eventually (can use anything)
         far_field_loss = self.ae_loss(pred_far_fields.squeeze(), far_fields, choice = 0)
-        phase_loss = self.ae_loss(pred_phases.squeeze(), phases, choice = 0)
-        derivative_loss = self.ae_loss(pred_derivatives.squeeze(), derivatives, choice = 0)
+        phase_loss = self.ae_loss(pred_phases.squeeze(), phases, choice = 0) # stick with MSE for this
+        derivative_loss = self.ae_loss(pred_derivatives.squeeze(), derivatives, choice = 0) # stick with MSE for this
 
         total_loss = self.alpha*near_field_loss + self.beta*far_field_loss + self.gamma*phase_loss + self.delta*derivative_loss
     
@@ -213,9 +220,9 @@ class CAI_Model(LightningModule):
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
 
-    #----------------------------
-    # Convert: Phase To Curvature 
-    #----------------------------
+    #------------------------------
+    # Convert: Phase To Derivatives
+    #------------------------------
     def convert_phase(self, batch_phase):
         batch_size = batch_phase.size()[0]
         return curvature.get_der_train(batch_phase.view(batch_size, 3, 3))
@@ -224,7 +231,7 @@ class CAI_Model(LightningModule):
 
         return torch.abs(prediction - label)
 
-    def organize_testing(self, predictions, batch, batch_idx, dataloader):
+    def organize_testing(self, predictions, batch, batch_idx, dataloader): # this is part of those lists that has to be fixed.
         pred_near_field, pred_far_field, pred_phase, pred_derivative = predictions
         true_near_field, true_far_field, true_radii, true_phase, true_derivative = batch
        
@@ -296,26 +303,31 @@ class CAI_Model(LightningModule):
 
         # Learning: Phase parameters, derivatives
         phase = self.encode_phase(x_last)
-        derivatives = self.convert_phase(phase)
 
         # Constrain: Phase, derivatives
-        phase = self.constrain_phase(phase)
+        phase = self.constrain_phase(phase) # just phase = torch.sin(phase) :D
         phase = phase * torch.pi
 
-        #derivatives = self.constrain_derivative(derivatives)
+        # do you calculate derivatives before or after constraining phase? I think after. 
+
+        derivatives = self.convert_phase(phase)
+
+        
+
 
         # Decoder: Feature Reconstruction
-        x_last = self.decode_phase(phase)
-        x_last = x_last.view(x_shape)
+        x_last = self.decode_phase(phase) # MLP 
+        x_last = x_last.view(x_shape) 
 
         # - Update last layer from Resnet encoder
         x[-1] = x_last
-        x_recon = self.seg_head(self.decoder(*x))
-        x_recon = self.last(x_recon)
+        x_recon = self.seg_head(self.decoder(*x)) # MLP for final decison - takes output of the decoder and makes "classification" predictions. in our case, we're using it to give us amplitude and phase. we're co-opting a segmentation model to do this.
+        # seg head gives us a weird shape: (batch, channel, width, head) - so we send it to our self.last()
+        x_recon = self.last(x_recon) # gets reshaped
 
         return x_recon, phase, derivatives
 
-    def shared_step(self, batch, batch_idx):
+    def shared_step(self, batch, batch_idx): # training step, valid step, and testing all call this function. 
         near_fields, far_fields, radii, phases, derivatives = batch
         
         near_fields = near_fields.to(self.device)
@@ -330,8 +342,9 @@ class CAI_Model(LightningModule):
 
         pred_near_field, pred_phase, pred_derivatives = self.forward(near_fields)
 
-        wavefront = pred_near_field[:,0,:,:] * torch.exp(1j*pred_near_field[:,1,:,:])
+        wavefront = pred_near_field[:,0,:,:] * torch.exp(1j*pred_near_field[:,1,:,:]) # this is the near field wavefront.
 
+        # propagate to the far field
         pred_far_field = self.prop(wavefront)
         pred_far_field = torch.cat((pred_far_field.abs().unsqueeze(dim=1).float(), pred_far_field.angle().unsqueeze(dim=1).float()), dim=1) 
 
@@ -378,34 +391,13 @@ class CAI_Model(LightningModule):
         self.log("val_derivative_loss", derivative_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
 
         return {'loss' : total_loss, 'output' : predictions, 'target' : batch}
-
-    def test_step(self, batch, batch_idx):
+ 
+    def test_step(self, batch, batch_idx, dataloader_idx=0): # this lets us do evaluation
         #Get predictions
-        predictions = self.shared_step(batch, batch_idx)
+        predictions = self.shared_step(batch, batch_idx) # grabs all preds from the dataloader
+        self.organize_testing(predictions, batch, batch_idx, dataloader_idx) # fills in those lists we defined above.
 
-        #Calculate loss
-        loss = self.objective(batch, predictions)
-        total_loss = loss['total_loss']
-        near_field_loss = loss['near_field_loss']
-        far_field_loss = loss['far_field_loss']
-        phase_loss = loss['phase_loss']
-        derivative_loss = loss['derivative_loss']
-
-        #Log the loss
-        self.log("test_total_loss", total_loss, prog_bar = True, on_step = False, on_epoch = True, sync_dist = True)
-        self.log("test_near_field_loss", near_field_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
-        self.log("test_far_field_loss", far_field_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
-        self.log("test_phase_loss", phase_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
-        self.log("test_derivative_loss", derivative_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
-
-        return {'loss' : total_loss, 'output' : predictions, 'target' : batch}
-
-    def test_step(self, batch, batch_idx, dataloader_idx=0):
-        #Get predictions
-        predictions = self.shared_step(batch, batch_idx)
-        self.organize_testing(predictions, batch, batch_idx, dataloader_idx)
-
-    def on_test_end(self):
+    def on_test_end(self): 
 
         # Encoder
         train_encoder = {
@@ -548,14 +540,6 @@ class Encoder(LightningModule):
     def convert_phase(self, batch_phase):
         batch_size = batch_phase.size()[0]
         return curvature.get_der_train(batch_phase.view(batch_size, 3, 3))
-
-    def forward(self, x):
-        x = self.first(x)
-        representations = self.feature_extractor(x).flatten(1)
-        phase = self.classifier(representations)
-        derivatives = self.convert_phase(phase)
-            
-        return phase, derivatives
 
     def shared_step(self, batch, batch_idx):
         near_fields, far_fields, radii, phases, derivatives = batch
