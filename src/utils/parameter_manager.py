@@ -266,16 +266,16 @@ class ParameterManager():
                                 }
 
              
-        self._params_propagator = {
-                                'Nxp'           : self.Nxp, 
-                                'Nyp'           : self.Nyp, 
-                                'Lxp'           : self.Lxp, 
-                                'Lyp'           : self.Lyp,
-                                'distance'      : self._distance,
-                                'adaptive'      : self.adaptive,
-                                'batch_size'    : self.batch_size,
-                                'wavelength'    : self._wavelength, 
-                                }
+        #self._params_propagator = {
+        #                        'Nxp'           : self.Nxp, 
+        #                        'Nyp'           : self.Nyp, 
+        #                        'Lxp'           : self.Lxp, 
+        #                        'Lyp'           : self.Lyp,
+        #                        'distance'      : self._distance,
+        #                        'adaptive'      : self.adaptive,
+        #                        'batch_size'    : self.batch_size,
+        #                        'wavelength'    : self._wavelength, 
+        #                        }
                 
         self._params_datamodule = {
                                 'Nxp'           : self.Nxp, 
@@ -435,7 +435,7 @@ class ParameterManager():
                             'animation_params'      : self._animation_params,
                             # ml params:
                             'model_params'          : self._params_model,
-                            'propagator_params'     : self._params_propagator,
+                            #'propagator_params'     : self._params_propagator,
                             'datamodule_params'     : self._params_datamodule,
                             'meep_params'           : self._params_meep,
                             'all_paths'             : self._all_paths

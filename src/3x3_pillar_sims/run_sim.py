@@ -49,7 +49,7 @@ def dump_data(neighbor_index, data, pm):
    
     # Make sure pickle is written  
 
-    time.sleep(60)
+    time.sleep(20)
     
     print("\nEverything done\n")
 
@@ -149,31 +149,18 @@ if __name__=="__main__":
     params = yaml.load(open('../config.yaml'), Loader = yaml.FullLoader).copy()
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-neighbor_index", type=int, help="The index matching the index in radii_neighbors")
+    parser.add_argument("-index", type=int, help="The index matching the index in radii_neighbors")
     parser.add_argument("-resim", type=int, help="True if launching resims, False if generating data")
     parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to")
     parser.add_argument("-path_out_logs", help="This is the path that i/o logs get dumped to")
 
-    parser.add_argument("-folder_name", help="Contains info about the model", default = None)
-    parser.add_argument("-dataset", help="Train or Valid", default = None)
+    #parser.add_argument("-folder_name", help="Contains info about the model", default = None)
+    #parser.add_argument("-dataset", help="Train or Valid", default = None)
 
     args = parser.parse_args()
-    idx = args.neighbor_index
+    idx = args.index
     resim = args.resim
     params['path_dataset'] = args.path_out_sims
-
-    # Setup i/o recording
-
-    folder_path_logs = args.path_out_logs
-
-    create_folder(folder_path_logs)
-
-    log_name = "%s.log" % (str(idx).zfill(6))
-    filename_log = os.path.join(folder_path_logs, log_name)
-
-    io_log = open(filename_log, "w")
-    
-    sys.stdout = io_log
 
     # Run experiment
  
@@ -182,30 +169,31 @@ if __name__=="__main__":
     #embed()
 
     # if resim is false then we are generating data.
-
+    
     if(resim == 0):
          
         neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
         radii_list = neighbors_library[idx]
         
         run(radii_list, idx, pm)
+         
+    # otherwise we are doing a single resim
 
-    else:
-        folder_name = args.folder_name
-        dataset = args.dataset
+    #else:
+    #    folder_name = args.folder_name
+    #    dataset = args.dataset
 
-        if dataset == 'train':
-            path_results = os.path.join(path_results, folder_name, 'train_info')
-        elif dataset == 'valid':
-            path_results = os.path.join(path_results, folder_name, 'valid_info')
-        else:
-            exit()
-        
-        model_results = pickle.load(open(os.path.join(path_results,'resim.pkl'), 'rb'))
+    #    if dataset == 'train':
+    #        path_results = os.path.join(path_results, folder_name, 'train_info')
+    #    elif dataset == 'valid':
+    #        path_results = os.path.join(path_results, folder_name, 'valid_info')
+    #    else:
+    #        exit()
+    #    
+    #    model_results = pickle.load(open(os.path.join(path_results,'resim.pkl'), 'rb'))
 
-        phases = model_results['phase_pred'][idx]
+    #    phases = model_results['phase_pred'][idx]
 
-        radii_list = mapping.phase_to_radii(phases)
-        run(radii_list, idx, pm, folder_name, dataset)
-
-    io_log.close()
+    #    radii_list = mapping.phase_to_radii(phases)
+    #    run(radii_list, idx, pm, folder_name, dataset)
+    
