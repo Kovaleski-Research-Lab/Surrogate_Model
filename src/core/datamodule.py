@@ -53,7 +53,7 @@ class CAI_Datamodule(LightningDataModule):
 
     def setup(self, stage: Optional[str] = None):
         #TODO
-        train_file = 'preprocessed/cai_data_newInterpolate.pt'
+        train_file = 'preprocessed/testing_data.pt'
         valid_file = None
         test_file = None
 
@@ -84,7 +84,7 @@ class customDataset(Dataset):
         self.transform = transform
         logging.debug("customDataset | Setting transform to {}".format(self.transform))
         self.near_fields = data['near_fields']
-        self.far_fields = data['far_fields']
+        #self.far_fields = data['far_fields']
         self.radii = data['radii']
         self.phases = data['phases']
         self.derivatives = data['derivatives']
@@ -97,9 +97,11 @@ class customDataset(Dataset):
 
     def __getitem__(self, idx):
         if self.transform:   
-            return self.transform(self.near_fields[idx]), self.transform(self.far_fields[idx]), self.radii[idx].float(), self.phases[idx].float(), self.derivatives[idx].float()
+            #return self.transform(self.near_fields[idx]), self.transform(self.far_fields[idx]), self.radii[idx].float(), self.phases[idx].float(), self.derivatives[idx].float()
+            return self.transform(self.near_fields[idx]), self.radii[idx].float(), self.phases[idx].float(), self.derivatives[idx].float()
         else:   
-            return self.near_fields[idx], self.far_fields[idx], self.radii[idx].float(), self.phases[idx].float(), self.derivatives[idx].float()
+            #return self.near_fields[idx], self.far_fields[idx], self.radii[idx].float(), self.phases[idx].float(), self.derivatives[idx].float()
+            return self.near_fields[idx], self.radii[idx].float(), self.phases[idx].float(), self.derivatives[idx].float()
 
 #--------------------------------
 # Initialize: Select dataset

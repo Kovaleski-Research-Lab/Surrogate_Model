@@ -25,7 +25,8 @@ from core import conv_upsample
 
 
 class SurrogateModel(LightningModule):
-    def __init__(self, params_model, params_propagator):
+    #def __init__(self, params_model, params_propagator):
+    def __init__(self, params_model):
         super().__init__()
  
         self.params = params_model
@@ -79,26 +80,26 @@ class SurrogateModel(LightningModule):
         self.val_phase_truth_resim = []
         self.val_nf_pred_resim = []
         self.val_nf_truth_resim = []
-        self.val_ff_pred_resim = []
-        self.val_ff_truth_resim = []
+        #self.val_ff_pred_resim = []
+        #self.val_ff_truth_resim = []
     
         self.train_phase_pred_resim = []
         self.train_phase_truth_resim = []
         self.train_nf_pred_resim = []
         self.train_nf_truth_resim = []
-        self.train_ff_pred_resim = []
-        self.train_ff_truth_resim = []
+        #self.train_ff_pred_resim = []
+        #self.train_ff_truth_resim = []
 
         # for recon
         self.val_nf_amp_diff = []
         self.val_nf_angle_diff = []
-        self.val_ff_amp_diff = []
-        self.val_ff_angle_diff = []
+        #self.val_ff_amp_diff = []
+        #self.val_ff_angle_diff = []
 
         self.train_nf_amp_diff = []
         self.train_nf_angle_diff = []
-        self.train_ff_amp_diff = []
-        self.train_ff_angle_diff = []
+        #self.train_ff_amp_diff = []
+        #self.train_ff_angle_diff = []
 
         self.save_hyperparameters()
 
@@ -194,29 +195,34 @@ class SurrogateModel(LightningModule):
 
     def objective(self, batch, predictions, alpha = 1, beta = 1, gamma = 1, delta = 1):
 
-        near_fields, far_fields, radii, phases, derivatives = batch
+        #near_fields, far_fields, radii, phases, derivatives = batch
+        near_fields, radii, phases, derivatives = batch
 
         near_fields = near_fields[:,1,:,:,:].float().squeeze() # 1=y component
-        far_fields = far_fields[:,1,:,:,:].float().squeeze()
+        #far_fields = far_fields[:,1,:,:,:].float().squeeze()
         radii = radii.squeeze()
         phases = phases.squeeze()
         derivatives = derivatives.squeeze()
 
-        pred_near_fields, pred_far_fields, pred_phases, pred_derivatives = predictions
+        #pred_near_fields, pred_far_fields, pred_phases, pred_derivatives = predictions
+        pred_near_fields, pred_phases, pred_derivatives = predictions
 
         #Training: Phase, Curvature, Efield
         
         near_field_loss = self.ae_loss(pred_near_fields.squeeze(), near_fields, choice = 0) # use EMV eventually (can use anything)
-        far_field_loss = self.ae_loss(pred_far_fields.squeeze(), far_fields, choice = 0)
+        #far_field_loss = self.ae_loss(pred_far_fields.squeeze(), far_fields, choice = 0)
         phase_loss = self.ae_loss(pred_phases.squeeze(), phases, choice = 0) # stick with MSE for this
         derivative_loss = self.ae_loss(pred_derivatives.squeeze(), derivatives, choice = 0) # stick with MSE for this
 
-        total_loss = self.alpha*near_field_loss + self.beta*far_field_loss + self.gamma*phase_loss + self.delta*derivative_loss
+        #total_loss = self.alpha*near_field_loss + self.beta*far_field_loss + self.gamma*phase_loss + self.delta*derivative_loss
+        total_loss = self.alpha*near_field_loss + self.gamma*phase_loss + self.delta*derivative_loss
     
+       # return {"total_loss": total_loss, "near_field_loss": near_field_loss, 
+       #         "phase_loss": phase_loss, "far_field_loss" : far_field_loss,
+       #         "derivative_loss": derivative_loss}
         return {"total_loss": total_loss, "near_field_loss": near_field_loss, 
-                "phase_loss": phase_loss, "far_field_loss" : far_field_loss,
-                "derivative_loss": derivative_loss}
-   
+                "phase_loss": phase_loss, "derivative_loss": derivative_loss}
+
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
 
@@ -232,8 +238,10 @@ class SurrogateModel(LightningModule):
         return torch.abs(prediction - label)
 
     def organize_testing(self, predictions, batch, batch_idx, dataloader): # this is part of those lists that has to be fixed.
-        pred_near_field, pred_far_field, pred_phase, pred_derivative = predictions
-        true_near_field, true_far_field, true_radii, true_phase, true_derivative = batch
+        #pred_near_field, pred_far_field, pred_phase, pred_derivative = predictions
+        pred_near_field, pred_phase, pred_derivative = predictions
+        #true_near_field, true_far_field, true_radii, true_phase, true_derivative = batch
+        true_near_field, true_radii, true_phase, true_derivative = batch
        
         if dataloader == 0: #Val dataloader 
             # encoder
@@ -246,8 +254,8 @@ class SurrogateModel(LightningModule):
             self.val_nf_amp_diff.append(self.get_abs_difference(pred_near_field[:,0,:,:], true_near_field[:,1,0,:,:]).detach().cpu().numpy())
             self.val_nf_angle_diff.append(self.get_abs_difference(pred_near_field[:,1,:,:], true_near_field[:,1,1,:,:]).detach().cpu().numpy())
 
-            self.val_ff_amp_diff.append(self.get_abs_difference(pred_far_field[:,0,:,:], true_far_field[:,1,0,:,:]).detach().cpu().numpy())
-            self.val_ff_angle_diff.append(self.get_abs_difference(pred_far_field[:,1,:,:], true_far_field[:,1,1,:,:]).detach().cpu().numpy())
+            #self.val_ff_amp_diff.append(self.get_abs_difference(pred_far_field[:,0,:,:], true_far_field[:,1,0,:,:]).detach().cpu().numpy())
+            #self.val_ff_angle_diff.append(self.get_abs_difference(pred_far_field[:,1,:,:], true_far_field[:,1,1,:,:]).detach().cpu().numpy())
 
             # resim
             if batch_idx == 0:
@@ -257,8 +265,8 @@ class SurrogateModel(LightningModule):
                 self.val_nf_pred_resim.append(pred_near_field.detach().cpu().numpy())
                 self.val_nf_truth_resim.append(true_near_field[:,1,:,:,:].detach().cpu().numpy())
 
-                self.val_ff_pred_resim.append(pred_far_field.detach().cpu().numpy())
-                self.val_ff_truth_resim.append(true_far_field[:,1,:,:,:].detach().cpu().numpy())
+                #self.val_ff_pred_resim.append(pred_far_field.detach().cpu().numpy())
+                #self.val_ff_truth_resim.append(true_far_field[:,1,:,:,:].detach().cpu().numpy())
                 
         elif dataloader == 1: #Train dataloader
             # encoder
@@ -272,8 +280,8 @@ class SurrogateModel(LightningModule):
             self.train_nf_amp_diff.append(self.get_abs_difference(pred_near_field[:,0,:,:], true_near_field[:,1,0,:,:]).detach().cpu().numpy())
             self.train_nf_angle_diff.append(self.get_abs_difference(pred_near_field[:,1,:,:], true_near_field[:,1,1,:,:]).detach().cpu().numpy())
 
-            self.train_ff_amp_diff.append(self.get_abs_difference(pred_far_field[:,0,:,:], true_far_field[:,1,0,:,:]).detach().cpu().numpy())
-            self.train_ff_angle_diff.append(self.get_abs_difference(pred_far_field[:,1,:,:], true_far_field[:,1,1,:,:]).detach().cpu().numpy())
+            #self.train_ff_amp_diff.append(self.get_abs_difference(pred_far_field[:,0,:,:], true_far_field[:,1,0,:,:]).detach().cpu().numpy())
+            #self.train_ff_angle_diff.append(self.get_abs_difference(pred_far_field[:,1,:,:], true_far_field[:,1,1,:,:]).detach().cpu().numpy())
 
             # resim
             if batch_idx == 0:
@@ -283,8 +291,8 @@ class SurrogateModel(LightningModule):
                 self.train_nf_pred_resim.append(pred_near_field.detach().cpu().numpy())
                 self.train_nf_truth_resim.append(true_near_field[:,1,:,:,:].detach().cpu().numpy())
 
-                self.train_ff_pred_resim.append(pred_far_field.detach().cpu().numpy())
-                self.train_ff_truth_resim.append(true_far_field[:,1,:,:,:].detach().cpu().numpy())
+                #self.train_ff_pred_resim.append(pred_far_field.detach().cpu().numpy())
+                #self.train_ff_truth_resim.append(true_far_field[:,1,:,:,:].detach().cpu().numpy())
 
         else:
             exit()
@@ -328,27 +336,29 @@ class SurrogateModel(LightningModule):
         return x_recon, phase, derivatives
 
     def shared_step(self, batch, batch_idx): # training step, valid step, and testing all call this function. 
-        near_fields, far_fields, radii, phases, derivatives = batch
+        #near_fields, far_fields, radii, phases, derivatives = batch
+        near_fields, radii, phases, derivatives = batch
         
         near_fields = near_fields.to(self.device)
-        far_fields = far_fields.to(self.device)
+        #far_fields = far_fields.to(self.device)
         radii = radii.to(self.device)
         phases = phases.to(self.device)
         derivatives = derivatives.to(self.device)
            
         #Going to just use the y component for now
         near_fields = near_fields[:,1,:,:,:].float()
-        far_fields = far_fields[:,1,:,:,:].float()
+        #far_fields = far_fields[:,1,:,:,:].float()
 
         pred_near_field, pred_phase, pred_derivatives = self.forward(near_fields)
 
-        wavefront = pred_near_field[:,0,:,:] * torch.exp(1j*pred_near_field[:,1,:,:]) # this is the near field wavefront.
+        #wavefront = pred_near_field[:,0,:,:] * torch.exp(1j*pred_near_field[:,1,:,:]) # this is the near field wavefront.
 
         # propagate to the far field
-        pred_far_field = self.prop(wavefront)
-        pred_far_field = torch.cat((pred_far_field.abs().unsqueeze(dim=1).float(), pred_far_field.angle().unsqueeze(dim=1).float()), dim=1) 
+        #pred_far_field = self.prop(wavefront)
+        #pred_far_field = torch.cat((pred_far_field.abs().unsqueeze(dim=1).float(), pred_far_field.angle().unsqueeze(dim=1).float()), dim=1) 
 
-        return pred_near_field, pred_far_field, pred_phase, pred_derivatives
+        #return pred_near_field, pred_far_field, pred_phase, pred_derivatives
+        return pred_near_field, pred_phase, pred_derivatives
         
     def training_step(self, batch, batch_idx):
         #Get predictions
@@ -358,14 +368,14 @@ class SurrogateModel(LightningModule):
         loss = self.objective(batch, predictions)
         total_loss = loss['total_loss']
         near_field_loss = loss['near_field_loss']
-        far_field_loss = loss['far_field_loss']
+        #far_field_loss = loss['far_field_loss']
         phase_loss = loss['phase_loss']
         derivative_loss = loss['derivative_loss']
         
         #Log the loss
         self.log("train_total_loss", total_loss, prog_bar = True, on_step = False, on_epoch = True, sync_dist = True)
         self.log("train_near_field_loss", near_field_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
-        self.log("train_far_field_loss", far_field_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+        #self.log("train_far_field_loss", far_field_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
         self.log("train_phase_loss", phase_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
         self.log("train_derivative_loss", derivative_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
 
@@ -379,14 +389,14 @@ class SurrogateModel(LightningModule):
         loss = self.objective(batch, predictions)
         total_loss = loss['total_loss']
         near_field_loss = loss['near_field_loss']
-        far_field_loss = loss['far_field_loss']
+        #far_field_loss = loss['far_field_loss']
         phase_loss = loss['phase_loss']
         derivative_loss = loss['derivative_loss']
 
         #Log the loss
         self.log("val_total_loss", total_loss, prog_bar = True, on_step = False, on_epoch = True, sync_dist = True)
         self.log("val_near_field_loss", near_field_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
-        self.log("val_far_field_loss", far_field_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+        #self.log("val_far_field_loss", far_field_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
         self.log("val_phase_loss", phase_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
         self.log("val_derivative_loss", derivative_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
 
@@ -419,8 +429,8 @@ class SurrogateModel(LightningModule):
             'phase_truth'   : np.concatenate(self.train_phase_truth_resim),
             'nf_pred'       : np.concatenate(self.train_nf_pred_resim),
             'nf_truth'      : np.concatenate(self.train_nf_truth_resim),
-            'ff_pred'       : np.concatenate(self.train_ff_pred_resim),
-            'ff_truth'      : np.concatenate(self.train_ff_truth_resim), 
+            #'ff_pred'       : np.concatenate(self.train_ff_pred_resim),
+            #'ff_truth'      : np.concatenate(self.train_ff_truth_resim), 
             }
 
         val_resim = {
@@ -428,21 +438,21 @@ class SurrogateModel(LightningModule):
             'phase_truth'   : np.concatenate(self.val_phase_truth_resim),
             'nf_pred'       : np.concatenate(self.val_nf_pred_resim),
             'nf_truth'      : np.concatenate(self.val_nf_truth_resim),
-            'ff_pred'       : np.concatenate(self.val_ff_pred_resim),
-            'ff_truth'      : np.concatenate(self.val_ff_truth_resim), 
+            #'ff_pred'       : np.concatenate(self.val_ff_pred_resim),
+            #'ff_truth'      : np.concatenate(self.val_ff_truth_resim), 
             }
 
         train_recon = {
             'nf_amp_diff'       : np.concatenate(self.train_nf_amp_diff),
             'nf_angle_diff'     : np.concatenate(self.train_nf_angle_diff),
-            'ff_amp_diff'       : np.concatenate(self.train_ff_amp_diff),
-            'ff_angle_diff'     : np.concatenate(self.train_ff_angle_diff),
+            #'ff_amp_diff'       : np.concatenate(self.train_ff_amp_diff),
+            #'ff_angle_diff'     : np.concatenate(self.train_ff_angle_diff),
             }
         val_recon = {
             'nf_amp_diff'       : np.concatenate(self.val_nf_amp_diff),
             'nf_angle_diff'     : np.concatenate(self.val_nf_angle_diff),
-            'ff_amp_diff'       : np.concatenate(self.val_ff_amp_diff),
-            'ff_angle_diff'     : np.concatenate(self.val_ff_angle_diff),
+            #'ff_amp_diff'       : np.concatenate(self.val_ff_amp_diff),
+            #'ff_angle_diff'     : np.concatenate(self.val_ff_angle_diff),
             }        
         #log_results(self, results, epoch, mode, count = 5, name = None):       
         self.logger.experiment.log_results(results = train_encoder, epoch=None, count=5, mode = 'train', name='encoder')
@@ -516,10 +526,11 @@ class Encoder(LightningModule):
 
     def objective(self, batch, predictions, alpha = 1, beta = 1, gamma = 1, delta = 1):
 
-        near_fields, far_fields, radii, phases, derivatives = batch
+        #near_fields, far_fields, radii, phases, derivatives = batch
+        near_fields, radii, phases, derivatives = batch
 
         near_fields = near_fields[:,1,:,:,:].float().squeeze()
-        far_fields = far_fields[:,1,:,:,:].float().squeeze()
+        #far_fields = far_fields[:,1,:,:,:].float().squeeze()
         radii = radii.squeeze()
         phases = phases.squeeze()
         derivatives = derivatives.squeeze()
@@ -542,11 +553,12 @@ class Encoder(LightningModule):
         return curvature.get_der_train(batch_phase.view(batch_size, 3, 3))
 
     def shared_step(self, batch, batch_idx):
-        near_fields, far_fields, radii, phases, derivatives = batch
+        #near_fields, far_fields, radii, phases, derivatives = batch
+        near_fields, radii, phases, derivatives = batch
                
         #Going to just use the y component for now
         near_fields = near_fields[:,1,:,:,:].float()
-        far_fields = far_fields[:,1,:,:,:].float()
+        #far_fields = far_fields[:,1,:,:,:].float()
 
         pred_phase, pred_derivatives = self.forward(near_fields)
         return pred_phase, pred_derivatives

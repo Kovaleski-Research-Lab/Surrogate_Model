@@ -33,5 +33,5 @@ kill_tag: sim
 
 # Define Simulation
 
-num_sims: 1400 # this is the ending index
-start_group_id: 976
+num_sims: 1600 # this is the ending index
+start_group_id: 1379

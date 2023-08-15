@@ -29,7 +29,7 @@ def run(params):
     #logging.basicConfig(level=logging.DEBUG)
 
     # Initialize: Parameter manager
-    pm = parameter_manager.Parameter_Manager(params=params)
+    pm = parameter_manager.ParameterManager(params=params)
           
     # Initialize: Seeding
     if(pm.seed_flag):
@@ -40,7 +40,7 @@ def run(params):
 
     # Initialize: The datamodule
     data = datamodule.select_data(pm.params_datamodule)
-
+    
     # Initialize: The logger
     logger = custom_logger.Logger(all_paths=pm.all_paths, name=pm.model_id, version=0)
 
@@ -69,6 +69,7 @@ def run(params):
                           num_sanity_val_steps = 0, default_root_dir = pm.path_results, 
                           check_val_every_n_epoch = pm.valid_rate, callbacks = [checkpoint_callback])
 
+    from IPython import embed; embed(); exit()
     # Train
     trainer.fit(model,data) # this calls train_step() and valid_step()
     trainer.test(model, dataloaders=[data.val_dataloader(),data.train_dataloader()]) # this calls model.test_step. 

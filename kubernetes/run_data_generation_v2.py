@@ -173,7 +173,7 @@ def run_generation(params):
                             current_group.pop(i)
                             print()
 
-                    print("Log: Elapsed Time = %s minutes, Group Size = %s, Total (In Progres) = %s / %s" % ((wait_time_sec * (k + 1)) / 60, len(current_group), counter, params["num_sims"]))
+                    print("Log: Elapsed Time = %s minutes, Group Size = %s, Total (In Progress) = %s / %s" % ((wait_time_sec * (k + 1)) / 60, len(current_group), counter, params["num_sims"]))
 
                     if(sum(pod_progress) > 0):
                         print("\nJobs Finished. Updating...\n")

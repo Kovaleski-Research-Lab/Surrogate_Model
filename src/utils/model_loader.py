@@ -21,7 +21,8 @@ from core import datamodule, model
 def select_model(pm):
     logging.debug("select_model.py - Selecting model") 
     network = None
-    network = model.CAI_Model(pm.params_model, pm.params_propagator)
+    #network = model.SurrogateModel(pm.params_model, pm.params_propagator)
+    network = model.SurrogateModel(pm.params_model)
     #network = model.Encoder(pm.params_model)
 
     if pm.load_checkpoint:

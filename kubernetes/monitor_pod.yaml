@@ -13,7 +13,7 @@ spec:
           memory: 8G
           cpu: 6
         requests:
-          memory: 4G
+          memory: 6G
           cpu: 6
       volumeMounts:
         - name: meep-results

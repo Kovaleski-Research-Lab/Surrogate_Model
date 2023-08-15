@@ -43,6 +43,7 @@ def preprocess_data(raw_data_files = None, path = None):
     phases = []
     radii = []
     der = []
+    count = 0
     if raw_data_files is None:
         raw_data_files = os.listdir(path)
        
@@ -51,6 +52,8 @@ def preprocess_data(raw_data_files = None, path = None):
             path = "/develop/data/spie_journal_2023/data_subset/"
             #data = pickle.load(open('"/develop/data/spie_journal_2023/data_subset"'.format(f), 'rb'))
             data = pickle.load(open(os.path.join(path, f), "rb"))
+            count += 1
+            print(f"count = {count} file = {os.path.join(path,f)}")
         else:
             pass
 
@@ -77,7 +80,7 @@ def preprocess_data(raw_data_files = None, path = None):
 
         #temp_phases = radii_to_phase(radii[-1])
         temp_phases = torch.from_numpy(mapping.radii_to_phase(radii[-1]))
-        
+        #embed();exit()        
 
         #phases.append(constrain_values(temp_phases))
         phases.append(temp_phases)
@@ -85,13 +88,12 @@ def preprocess_data(raw_data_files = None, path = None):
         temp_der = curvature.get_der_train(temp_phases.view(1,3,3))
         #der.append(constrain_values(temp_der))
         der.append(temp_der)
-
+    
     near_fields = torch.cat(near_fields, dim=0).float()
     #far_fields = torch.cat(far_fields, dim=0).float()
     radii = torch.cat(radii, dim=0).float()
     phases = torch.cat(phases, dim=0).float()
     der = torch.stack(der).float()
-#    from IPython import embed; embed()
 
     data = {'near_fields' : near_fields,    
 #            'far_fields' : far_fields, 
@@ -103,5 +105,9 @@ def preprocess_data(raw_data_files = None, path = None):
     torch.save(data, os.path.join(path_save, 'testing_data.pt'))
 
 if __name__=="__main__":
-    raw_data_files = os.listdir('/develop/data/spie_journal_2023/data_subset')
+    folder = os.listdir('/develop/data/spie_journal_2023/data_subset')
+    raw_data_files = []
+    for filename in folder:
+        if filename.endswith(".pkl"):
+            raw_data_files.append(filename)
     preprocess_data(raw_data_files = raw_data_files)

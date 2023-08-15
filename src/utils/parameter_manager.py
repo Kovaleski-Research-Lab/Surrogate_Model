@@ -456,9 +456,9 @@ class ParameterManager():
         return self._params_model
 
 
-    @property
-    def params_propagator(self):
-        return self._params_propagator                         
+    #@property
+    #def params_propagator(self):
+    #    return self._params_propagator                         
 
 
     @property
