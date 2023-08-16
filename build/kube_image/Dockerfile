@@ -23,6 +23,6 @@ EXPOSE 8888
 
 WORKDIR /develop/results
 WORKDIR /develop/code
-
+WORKDIR /develop/code
 #RUN git clone https://github.com/Kovaleski-Research-Lab/surrogate_model.git .
 #WORKDIR /develop/code/src/3x3_pillar_sims
