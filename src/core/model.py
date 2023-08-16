@@ -41,7 +41,7 @@ class SurrogateModel(LightningModule):
 
         self.mcl_params = self.params['mcl_params']
         self.alpha = self.mcl_params['alpha']
-        self.beta = self.mcl_params['beta']
+        #self.beta = self.mcl_params['beta']
         self.gamma = self.mcl_params['gamma']
         self.delta = self.mcl_params['delta']
 
@@ -106,8 +106,8 @@ class SurrogateModel(LightningModule):
     def constrain_phase(self, phase): # is this where we do phase wrapping? 
         return torch.nn.functional.tanh(phase)
 
-    def constrain_derivative(self, der): # BAD. they are analytically calculated.
-        return torch.nn.functional.tanh(der)
+    #def constrain_derivative(self, der): # BAD. they are analytically calculated.
+    #    return torch.nn.functional.tanh(der)
 
     def create_propagation_layer(self, params_propagator):
         self.prop = propagator.Propagator(params = params_propagator) 
@@ -140,7 +140,8 @@ class SurrogateModel(LightningModule):
        
         spatial_shape = tuple(self.data_shape[-2:].numpy()) 
 
-        self.first = conv_upsample.get_conv_transpose(input_size = spatial_shape, in_channels = self.data_shape[1], 
+        self.first = conv_upsample.get_conv_transpose(input_size = spatial_shape,
+                                        in_channels = self.data_shape[1], 
                                         out_channels = self.data_shape[1], mod_size = 32)
 
         #self.first = self.first.float()
@@ -193,7 +194,8 @@ class SurrogateModel(LightningModule):
             pass # make it earth movers distance 
         return loss
 
-    def objective(self, batch, predictions, alpha = 1, beta = 1, gamma = 1, delta = 1):
+    #def objective(self, batch, predictions, alpha = 1, beta = 1, gamma = 1, delta = 1):
+    def objective(self, batch, predictions, alpha = 1, gamma = 1, delta = 1):
 
         #near_fields, far_fields, radii, phases, derivatives = batch
         near_fields, radii, phases, derivatives = batch
@@ -308,16 +310,17 @@ class SurrogateModel(LightningModule):
         x_shape = x_last.size()
         x_last = x_last.view(x_shape[0], -1)
 
-
+        #from IPython import embed; embed()
         # Learning: Phase parameters, derivatives
         phase = self.encode_phase(x_last)
 
         # Constrain: Phase, derivatives
-        phase = self.constrain_phase(phase) # just phase = torch.sin(phase) :D
-        phase = phase * torch.pi
+        phase = self.constrain_phase(phase) # tanh
+        #phase = phase * torch.pi    ## what???
+        phase = torch.sin(phase)
 
         # do you calculate derivatives before or after constraining phase? I think after. 
-
+        #embed();exit()
         derivatives = self.convert_phase(phase)
 
         
@@ -480,7 +483,7 @@ class Encoder(LightningModule):
 
         self.mcl_params = self.params['mcl_params']
         self.alpha = self.mcl_params['alpha']
-        self.beta = self.mcl_params['beta']
+        #self.beta = self.mcl_params['beta']
         self.gamma = self.mcl_params['gamma']
         self.delta = self.mcl_params['delta']
 
@@ -524,7 +527,8 @@ class Encoder(LightningModule):
 
         return loss
 
-    def objective(self, batch, predictions, alpha = 1, beta = 1, gamma = 1, delta = 1):
+    #def objective(self, batch, predictions, alpha = 1, beta = 1, gamma = 1, delta = 1):
+    def objective(self, batch, predictions, alpha = 1, gamma = 1, delta = 1):
 
         #near_fields, far_fields, radii, phases, derivatives = batch
         near_fields, radii, phases, derivatives = batch
@@ -630,5 +634,5 @@ if __name__ == "__main__":
     batch = next(iter(dm.train_dataloader()))
     #model = CAI_Model(pm.params_model, pm.params_propagator)
     model = Encoder(pm.params_model)
-    embed()
+    #embed()
     

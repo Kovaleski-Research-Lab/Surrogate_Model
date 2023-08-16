@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.getcwd()))
 from utils import parameter_manager
 sys.path.append("../core")
 from core import datamodule, model, custom_logger, curvature, propagator
-from model import CAI_Model
+from model import SurrogateModel
 from mpl_toolkits.axes_grid1 import AxesGrid
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.pyplot as plt
@@ -50,7 +50,7 @@ def gather_loss(folder_path):
             key_dict = {}    
             
             alpha = key_dict['alpha'] = yaml_content['mcl_params']['alpha']
-            beta = key_dict['beta'] = yaml_content['mcl_params']['beta']
+            #beta = key_dict['beta'] = yaml_content['mcl_params']['beta']
             delta = key_dict['delta'] = yaml_content['mcl_params']['delta']
             gamma = key_dict['gamma'] = yaml_content['mcl_params']['gamma']
             lr = key_dict['lr'] = yaml_content['learning_rate']
@@ -118,13 +118,13 @@ def load_loss(path):
     else:
         return pd.read_csv(path)
 
-def plot_loss(loss, title, min, max, save_fig=False):
+def plot_loss(loss, title, save_fig=False):
     
     plt.style.use("ggplot")
     
     fig, ax = plt.subplots(2, int((len(loss.keys()) - 1)/2), figsize = (12, 4.5))
         
-    lterms = ['Total Loss', 'Near Field Loss', 'Far Field Loss', 'Phase Loss', 'Curvature Loss']
+    lterms = ['Total Loss', 'Near Field Loss', 'Phase Loss', 'Curvature Loss'] # near field: alpha, phase: gamma, derivs: delta
     
     for i, name in enumerate(loss.keys()):
         
@@ -146,7 +146,7 @@ def plot_loss(loss, title, min, max, save_fig=False):
             ax[1][i].tick_params(axis="x", labelsize=6)
             ax[1][i].tick_params(axis="y", labelsize=6)
             #ax[1][i].legend(loc='upper right', fontsize=fontsize)
-            ax[1][i].set_ylim([min[i],max[i]])
+            #ax[1][i].set_ylim([min[i],max[i]])
             
         else:
             #fig.suptitle(f"\nLoss Analysis {title}: " + "Train Dataset", fontsize=fontsize, fontproperties=font)
@@ -156,21 +156,21 @@ def plot_loss(loss, title, min, max, save_fig=False):
             y_vals = loss[name]
             y_vals = y_vals[y_vals.index % 2 != 0]
             
-            ax[0][i-6].plot(x_vals, y_vals, color = colors[1], label=title)
-            ax[0][i-6].set_ylabel("Loss", fontsize = fontsize-1)
-            ax[0][i-6].set_xlabel("Epoch", fontsize = fontsize-1)
-            ax[0][i-6].set_title(name,fontsize=fontsize+1)
-            ax[0][i-6].tick_params(axis="x", labelsize=6)
-            ax[0][i-6].tick_params(axis="y", labelsize=6)
-            ax[0][i-6].set_ylim([0,100])
-            #ax[0][i-6].legend(loc='upper right', fontsize=fontsize)
-            ax[0][i-6].set_ylim([min[i-6],max[i-6]])
+            ax[0][i-5].plot(x_vals, y_vals, color = colors[1], label=title)
+            ax[0][i-5].set_ylabel("Loss", fontsize = fontsize-1)
+            ax[0][i-5].set_xlabel("Epoch", fontsize = fontsize-1)
+            ax[0][i-5].set_title(name,fontsize=fontsize+1)
+            ax[0][i-5].tick_params(axis="x", labelsize=6)
+            ax[0][i-5].tick_params(axis="y", labelsize=6)
+            ax[0][i-5].set_ylim([0,100])
+            #ax[0][i-5].legend(loc='upper right', fontsize=fontsize)
+            #ax[0][i-5].set_ylim([min[i-6],max[i-6]])
             
     fig.suptitle(title)
     fig.tight_layout()
 
     if save_fig == True:
-        l_string = r'($\alpha$' + " " + r'$\beta$' + " " + r'$\gamma$' + " " + r'$\delta$)'
+        l_string = r'($\alpha$' + " " + " " + r'$\gamma$' + " " + r'$\delta$)'
         temp = title.replace(l_string, "").replace("\n", "").replace(": ", "").replace(" ", "_").replace("=", "").replace("(", "").replace(")","").replace(".", "-")
         new_title = "a_b_d_g_" + temp
         
@@ -740,3 +740,16 @@ def plot_dft_fields(truth, recon, resim, target, batch=True, idx=None, savefig=F
         fig.savefig(f'other_plots/{target}_{flag}.pdf')
 
 
+if __name__=="__main__":
+    path_results = "/develop/results"
+    folder_name = "model_baseline" # this is where we send loss.csv, params.yaml and the folders valid_info, train_info
+    
+    folder_path = os.path.join(path_results, folder_name)
+    single_loss = gather_loss(folder_path)
+    #all_loss = em.gather_all_loss(path_results, backbone="resnet18")
+    
+    l_string = r'($\alpha$' + " " + r'$\gamma$' + " " + r'$\delta$)'
+    title = (l_string + f": ({single_loss['alpha']} {single_loss['delta']} {single_loss['gamma']}) " + "\n" 
+                    + single_loss['title'].replace(path_results,"").replace("/","") + " lr=" + str(single_loss['lr']))
+
+    plot_loss(single_loss['loss'], title, save_fig=False)

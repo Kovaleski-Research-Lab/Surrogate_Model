@@ -14,7 +14,7 @@ torch_home: '/develop/pretrained_models'
 #--------------------------------
 batch_size: 4
 #batch_size: 8
-num_epochs: 10
+num_epochs: 100
 
 accelerator: 'gpu' 
 gpu_config: [True, [0]]
@@ -34,7 +34,7 @@ freeze_encoder: False
 
 mcl_params:
     alpha: 1     #near-field
-    beta: 1     #far-field
+    #beta: 1     #far-field
     gamma: 1    #phase
     delta: 1    #derivatives
 
