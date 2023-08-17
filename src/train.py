@@ -10,7 +10,6 @@ import logging
 from pytorch_lightning.strategies import DDPStrategy
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.callbacks import ModelCheckpoint
-from pytorch_lightning.plugins.environments import SLURMEnvironment
 
 #--------------------------------
 # Import: Custom Python Libraries
@@ -60,8 +59,7 @@ def run(params):
                           check_val_every_n_epoch = pm.valid_rate, num_sanity_val_steps = 1,
                           devices = pm.gpu_list, max_epochs = pm.num_epochs, 
                           deterministic=True, enable_progress_bar=True, enable_model_summary=True,
-                          default_root_dir = pm.path_root, callbacks = [checkpoint_callback],
-                          plugins = [SLURMEnvironment(requeue_signal=signal.SIGHUP),],
+                          default_root_dir = pm.path_root, callbacks = [checkpoint_callback]
                           )
     else:
         logging.debug("Training with CPUs")

@@ -103,11 +103,9 @@ class SurrogateModel(LightningModule):
 
         self.save_hyperparameters()
 
-    def constrain_phase(self, phase): # is this where we do phase wrapping? 
-        return torch.nn.functional.tanh(phase)
-
-    #def constrain_derivative(self, der): # BAD. they are analytically calculated.
-    #    return torch.nn.functional.tanh(der)
+    def constrain_phase(self, phase): 
+        return torch.sin(phase) * torch.pi  # first we constrain it by sin which is periodic
+                                             # then we mult by pi to scale it
 
     def create_propagation_layer(self, params_propagator):
         self.prop = propagator.Propagator(params = params_propagator) 
@@ -310,21 +308,14 @@ class SurrogateModel(LightningModule):
         x_shape = x_last.size()
         x_last = x_last.view(x_shape[0], -1)
 
-        #from IPython import embed; embed()
         # Learning: Phase parameters, derivatives
         phase = self.encode_phase(x_last)
 
-        # Constrain: Phase, derivatives
-        phase = self.constrain_phase(phase) # tanh
-        #phase = phase * torch.pi    ## what???
-        phase = torch.sin(phase)
-
-        # do you calculate derivatives before or after constraining phase? I think after. 
-        #embed();exit()
+        # Constrain phase
+        phase = self.constrain_phase(phase)
+       
+        # do you calculate derivatives before or after constraining phase? I think after.  
         derivatives = self.convert_phase(phase)
-
-        
-
 
         # Decoder: Feature Reconstruction
         x_last = self.decode_phase(phase) # MLP 
@@ -351,7 +342,7 @@ class SurrogateModel(LightningModule):
         #Going to just use the y component for now
         near_fields = near_fields[:,1,:,:,:].float()
         #far_fields = far_fields[:,1,:,:,:].float()
-
+        #from IPython import embed; embed(); exit()
         pred_near_field, pred_phase, pred_derivatives = self.forward(near_fields)
 
         #wavefront = pred_near_field[:,0,:,:] * torch.exp(1j*pred_near_field[:,1,:,:]) # this is the near field wavefront.

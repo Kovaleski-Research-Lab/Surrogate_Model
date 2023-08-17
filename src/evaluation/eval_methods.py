@@ -747,7 +747,7 @@ if __name__=="__main__":
     folder_path = os.path.join(path_results, folder_name)
     single_loss = gather_loss(folder_path)
     #all_loss = em.gather_all_loss(path_results, backbone="resnet18")
-    
+    from IPython import embed;embed()
     l_string = r'($\alpha$' + " " + r'$\gamma$' + " " + r'$\delta$)'
     title = (l_string + f": ({single_loss['alpha']} {single_loss['delta']} {single_loss['gamma']}) " + "\n" 
                     + single_loss['title'].replace(path_results,"").replace("/","") + " lr=" + str(single_loss['lr']))

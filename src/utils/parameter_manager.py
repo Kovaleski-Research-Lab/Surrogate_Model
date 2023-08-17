@@ -47,8 +47,6 @@ class ParameterManager():
             sys.exit()
 
     def parse_params(self, params):
-        #print(params) 
-        print(f"grid size = {params['grid_size']}")
         try:
             self._resim = params['resim']
             # ML params first:

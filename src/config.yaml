@@ -12,9 +12,9 @@ torch_home: '/develop/pretrained_models'
 #--------------------------------
 #       Training Params
 #--------------------------------
-batch_size: 4
-#batch_size: 8
-num_epochs: 100
+#batch_size: 4
+batch_size: 8
+num_epochs: 5
 
 accelerator: 'gpu' 
 gpu_config: [True, [0]]
@@ -33,10 +33,10 @@ objective_function: 'mse'
 freeze_encoder: False
 
 mcl_params:
-    alpha: 1     #near-field
+    alpha: 0     #near-field
     #beta: 1     #far-field
     gamma: 1    #phase
-    delta: 1    #derivatives
+    delta: 0    #derivatives
 
 #--------------------------------
 #       All paths
