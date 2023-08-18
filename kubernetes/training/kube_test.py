@@ -107,9 +107,9 @@ def run_test(params):
 
     template_info = {"job_name": job_name, 
                      #"n_index": str(counter),
-                     #"num_cpus": str(params["num_cpus_per_op"]),
-                     #"num_mem_lim": str(params["num_mem_lim"]),
-                     #"num_mem_req": str(params["num_mem_req"]),
+                     "num_cpus": str(params["num_cpus_per_op"]),
+                     "num_mem_lim": str(params["num_mem_lim"]),
+                     "num_mem_req": str(params["num_mem_req"]),
                      "path_sims": params["path_simulations"], "path_image": params["path_image"], "path_logs": params["path_logs"]}
     filled_template = template.render(template_info)
 
@@ -121,7 +121,7 @@ def run_test(params):
 
     # --- Launch job
 
-    print("running kubernetes subprocess...")
+    print(f"running kubernetes subprocess...{path_job}")
     subprocess.run(["kubectl", "apply", "-f", path_job])
     
 if __name__ == "__main__":
@@ -130,5 +130,5 @@ if __name__ == "__main__":
     
     params = load_config(args["config"]) 
 
-    atexit.register(exit_handler)  # this is how we clean up jobs. 
+    #atexit.register(exit_handler)  # this is how we clean up jobs. 
     run_test(params)
