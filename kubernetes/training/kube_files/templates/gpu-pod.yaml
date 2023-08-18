@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: training-pod
+
+spec:
+  containers: 
+    - name: training
+      image: docker.io/kovaleskilab/spie-1.2
+      imagePullPolicy: IfNotPresent
+      command: ["sleep", "infinity"]
+      resources:
+        limits:
+          memory: 12Gi
+          cpu: 2
+          nvidia.com/gpu: 1
+        requests:
+          memory: 12Gi
+          cpu: 2
+          nvidia.com/gpu: 1
+      volumeMounts:
+        - mountPath: /results
+          name: meep-results
+        # IMPORTANT: we need SHM for PyTorch
+        - mountPath: /dev/shm
+          name: dshm
+  volumes:
+    - name: meep-results
+      persistentVolumeClaim:
+        claimName: meep-results
+    # setup shared memory as a RAM volume
+    - name: dshm
+      emptyDir:
+        medium: Memory
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: nvidia.com/gpu.product
+                operator: In
+                values:
+                  - NVIDIA-GeForce-RTX-3090
+                  - Tesla-T4

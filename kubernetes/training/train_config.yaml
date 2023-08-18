@@ -1,0 +1,35 @@
+
+# Configuration: Meep Data Generation
+
+# Define Paths
+# - path_image: path to public container image
+# - path_template: path to kubernetes job template
+# - path_simulations: path to store simulations (pvc)
+# - path_sim_job_files: path to store generated job files (local)
+
+path_image: docker.io/kovaleskilab/meep_ml:spie-1.2
+path_template: kube_files/templates/gpu-job.yaml
+
+path_simulations: /develop/results
+path_logs: /develop/data/spie_journal_2023/train_logs
+path_train_job_files: /develop/data/spie_journal_2023/kube_logs
+
+# Define Computing Environment
+# - num_mem_lim: limits of random access memory
+# - num_mem_req: requested random access memory
+# - num_cpus_per_op: number of cpus resource for each simulation, denote as a.
+# - num_parallel_ops: number of simulations happening in parallel, Denoate as b.
+# - num_cpus_total: number of cpus used at once in computing cluster, denote as c | c = a * b.
+
+num_mem_lim: 240G
+num_mem_req: 200G
+num_cpus_per_op: 40
+#num_cpus_total: 2048
+#num_parallel_ops: 32
+#num_cpus_total: 160
+
+namespace: gpn-mizzou-muem
+kill_time_min: 30
+kill_tag: train
+
+experiment: 1

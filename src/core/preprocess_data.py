@@ -105,7 +105,10 @@ def preprocess_data(raw_data_files = None, path = None):
     torch.save(data, os.path.join(path_save, 'testing_data.pt'))
 
 if __name__=="__main__":
+    print("we made it")
+    exit()
     folder = os.listdir('/develop/data/spie_journal_2023/data_subset')
+    
     raw_data_files = []
     for filename in folder:
         if filename.endswith(".pkl"):

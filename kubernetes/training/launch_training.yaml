@@ -1,0 +1,69 @@
+# batch/v1 -> use the JOB API
+apiVersion: batch/v1
+
+kind: Job
+
+
+metadata:
+  name: training-controller
+
+spec:
+  # how many times the system should
+  # retry before calling it a failure
+  backoffLimit: 0
+  template:
+    spec:
+      # should we restart on failure
+      restartPolicy: Never
+      # containers we will need
+      containers:
+
+        - name: training
+          # image can be from any public facing registry: we're using docker.io
+          image: docker.io/kovaleskilab/spie-1.2
+          # working dir when the container starts
+          workingDir: /develop/code/surrogate_model/kubernetes
+          # should Kube pull it?
+          imagePullPolicy: IfNotPresent
+          # expose the port that
+          # wil be used for DDP
+          ports:
+            -containerPort: 8880
+
+          # do i need to set environment variables? :/
+
+          command: ["python3", "training/run_experiments.py", "-config", "training/train_config.yaml"]
+          resources:
+            limits:
+              memory: 64Gi
+              cpu: 32
+              nvidia.com/gpu: 4
+            requests:
+              memory: 8Gi
+              cpu: 8
+              nvidia.com/gpu: 4
+      
+          volumeMounts:
+#            - name: meep-code
+#              mountPath: /develop/code
+            - name: meep-results
+              mountPath: /develop/results
+          imagePullPolicy: Always
+#
+#      initContainers:
+#        - name: git-cloner
+#          image: alpine/git
+#          command: ["/bin/sh","-c","git clone https://github.com/Kovaleski-Research-Lab/surrogate_model /develop/data; cp -r /develop/data/* /develop/code"]
+#          volumeMounts:
+#            - name: meep-code
+#              mountPath: /develop/code
+
+      volumes:
+        - name: meep-code
+          persistentVolumeClaim:
+            claimName: meep-code
+        - name: meep-results
+          persistentVolumeClaim:
+            claimName: meep-results
+
+      restartPolicy: Never
