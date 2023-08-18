@@ -117,7 +117,7 @@ def run_test(params):
     # --- Save job file
 
     save_file(path_job, filled_template)
-    from IPython import embed; embed(); exit()
+    #from IPython import embed; embed(); exit()
     # --- Launch job
 
     print(f"running kubernetes subprocess...{path_job}")
