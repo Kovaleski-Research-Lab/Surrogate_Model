@@ -10,7 +10,7 @@ metadata:
 spec:
   # how many times should the system
   # retry before calling it a failure
-  backoffLimit: 0
+  # backoffLimit: 0
   template:
     spec:
       # should we restart on failure
@@ -28,8 +28,8 @@ spec:
           #imagePullPolicy: IfNotPresent
           # we need to expose the port
           # that will be used for DDP
-          ports:
-            - containerPort: 8880
+          #ports:
+          #  - containerPort: 8880
           # setting of env variables
           #env:
           #  # which interface to use
@@ -49,27 +49,27 @@ spec:
             # limits - the max given to the container
             limits:
               # RAM
-              memory: 128Gi
+              memory: 240G
               # cores
-              cpu: 32
+              cpu: 40
               # NVIDIA GPUs
-              nvidia.com/gpu: 1
+              #nvidia.com/gpu: 1
             # requests - what we'd like
             requests:
               # RAM
-              memory: 64Gi
+              memory: 200G
               # CPU Cores
               cpu: 32
               # GPUs
-              nvidia.com/gpu: 1
+              #nvidia.com/gpu: 1
           # what volumes should we mount
           volumeMounts:
             # my datasets PVC should mount to /data
             - mountPath: /develop/results
               name: meep-results
             # IMPORTANT: we need SHM for DDP (shared mem, distributed data parallel)
-            - mountPath: /dev/shm
-              name: dshm
+            #- mountPath: /dev/shm
+            #  name: dshm
       # tell Kube where to find the volumes we want to use
       volumes:
         # which PVC is my data
@@ -77,17 +77,17 @@ spec:
           persistentVolumeClaim:
             claimName: meep-results
         # setup shared memory as a RAM volume
-        - name: dshm
-          emptyDir:
-            medium: Memory
+        #- name: dshm
+        #  emptyDir:
+        #    medium: Memory
       # Tell Kube what type of GPUs we want
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: nvidia.com/gpu.product
-                    operator: In
-                    values:
-                      # asking for 3090s only
-                      - NVIDIA-GeForce-RTX-3090
+      #affinity:
+      #  nodeAffinity:
+      #    requiredDuringSchedulingIgnoredDuringExecution:
+      #      nodeSelectorTerms:
+      #        - matchExpressions:
+      #            - key: nvidia.com/gpu.product
+      #              operator: In
+      #              values:
+      #                # asking for 3090s only
+      #                - NVIDIA-GeForce-RTX-3090

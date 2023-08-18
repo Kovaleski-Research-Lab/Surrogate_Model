@@ -99,6 +99,7 @@ def run_test(params):
 
     # this is where we'll dump the .yaml files that contain job information
     # maybe this can be deleted - we used it to keep track of meep sim jobs when lots of jobs were running in parallel :/
+
     create_folder(params["path_train_job_files"])
 
     job_name = "%s-%s" % (params["kill_tag"], str(params['experiment']).zfill(6))
@@ -122,10 +123,6 @@ def run_test(params):
     print("running kubernetes subprocess...")
     subprocess.run(["kubectl", "apply", "-f", path_job])
     
-  
-
-
-
 if __name__ == "__main__":
 
     args = parse_args(sys.argv)
