@@ -20,11 +20,12 @@ spec:
         # the name of the container
         - name: andy-train
           # the image: can be from any pubic facing registry
-          image: docker.io/kovaleskilab/meep_ml:spie-1.2 
+          image: docker.io/ctvqfq/bunny_ai:spie-1.2
+          #image: docker.io/kovaleskilab/meep_ml:spie-1.2 
           # the working dir when the container starts
           #workingDir: /develop/code/
           # should Kube pull it
-          imagePullPolicy: IfNotPresent
+          #imagePullPolicy: IfNotPresent
           # we need to expose the port
           # that will be used for DDP
           ports:
@@ -39,25 +40,26 @@ spec:
           #  - name: NCCL_DEBUG
           #    value: INFO
           # the command to run when the container starts
+          #command: ["python3", "surrogate_model/src/core/preprocess_data.py"]
           command: ["/bin/sh", "-c"]
-          #args: ["git clone https://github.com/Kovaleski-Research-Lab/surrogate_model.git .; cd /develop/code/src/core/; python3 preprocess_data.py > /develop/data/spie_journal_2023/train_logs/test.log"]
-          args: ["git clone https://github.com/Kovaleski-Research-Lab/surrogate_model.git .; cd /develop/code/src/core/; touch /develop/data/spie_journal_2023/kube_logs/test.txt"]
+          args: ["git clone https://github.com/Kovaleski-Research-Lab/surrogate_model.git .; cd /develop/code/src/core/; python3 preprocess_data.py > /develop/data/spie_journal_2023/train_logs/test.log"]
+          #args: ["git clone https://github.com/Kovaleski-Research-Lab/surrogate_model.git .; cd /develop/code/src/core/; touch /develop/data/spie_journal_2023/kube_logs/test.txt"]
           # define the resources for this container
           resources:
             # limits - the max given to the container
             limits:
               # RAM
-              memory: 16Gi
+              memory: 128Gi
               # cores
-              cpu: 2
+              cpu: 32
               # NVIDIA GPUs
               nvidia.com/gpu: 1
             # requests - what we'd like
             requests:
               # RAM
-              memory: 16Gi
+              memory: 64Gi
               # CPU Cores
-              cpu: 2
+              cpu: 32
               # GPUs
               nvidia.com/gpu: 1
           # what volumes should we mount

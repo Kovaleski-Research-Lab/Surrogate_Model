@@ -119,7 +119,6 @@ def run_test(params):
 
     # --- Launch job
 
-    #embed(); exit()
     print("running kubernetes subprocess...")
     subprocess.run(["kubectl", "apply", "-f", path_job])
     

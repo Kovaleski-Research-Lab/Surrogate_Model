@@ -44,10 +44,12 @@ spec:
               nvidia.com/gpu: 4
       
           volumeMounts:
-#            - name: meep-code
-#              mountPath: /develop/code
+            # my datasets PVC should mount to /results 
             - name: meep-results
               mountPath: /develop/results
+            # we need SHM for DDP ?? --shared memory?   ddp is what?
+            - name: dshm
+              mountPath: /develop/shm
           imagePullPolicy: Always
 #
 #      initContainers:

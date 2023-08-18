@@ -49,7 +49,7 @@ def preprocess_data(raw_data_files = None, path = None):
        
     for f in tqdm(raw_data_files, desc="Preprocessing data"):
         if '.pkl' in f:
-            path = "/develop/data/spie_journal_2023/data_subset/"
+            path = "/develop/results/"
             #data = pickle.load(open('"/develop/data/spie_journal_2023/data_subset"'.format(f), 'rb'))
             data = pickle.load(open(os.path.join(path, f), "rb"))
             count += 1
@@ -101,13 +101,11 @@ def preprocess_data(raw_data_files = None, path = None):
             'phases' : phases,
             'derivatives' : der,}
     
-    path_save = '/develop/data/spie_journal_2023/data_subset/preprocessed'
+    path_save = '/develop/results/preprocessed'
     torch.save(data, os.path.join(path_save, 'testing_data.pt'))
 
 if __name__=="__main__":
-    print("we made it")
-    exit()
-    folder = os.listdir('/develop/data/spie_journal_2023/data_subset')
+    folder = os.listdir('/develop/results')
     
     raw_data_files = []
     for filename in folder:

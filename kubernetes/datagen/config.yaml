@@ -24,7 +24,7 @@ num_mem_lim: 240G
 num_mem_req: 200G
 num_cpus_per_op: 40
 #num_cpus_total: 2048
-num_parallel_ops: 32
+num_parallel_ops: 5
 #num_cpus_total: 160
 
 namespace: gpn-mizzou-muem
@@ -33,5 +33,5 @@ kill_tag: sim
 
 # Define Simulation
 
-num_sims: 1600 # this is the ending index
-start_group_id: 1379
+num_sims: 2000 # this is the ending index
+start_group_id: 1995
