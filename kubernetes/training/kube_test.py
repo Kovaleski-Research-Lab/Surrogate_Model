@@ -90,6 +90,7 @@ def save_file(path, data):
     data_file.close()
 
 def run_test(params):
+
     template = load_file(params["path_template"])
 
     tag = params["path_template"].split("/")[-1]
@@ -129,5 +130,5 @@ if __name__ == "__main__":
     
     params = load_config(args["config"]) 
 
-    #atexit.register(exit_handler)  # this is how we clean up jobs. 
+    atexit.register(exit_handler)  # this is how we clean up jobs. 
     run_test(params)
