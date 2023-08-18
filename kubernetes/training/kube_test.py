@@ -97,7 +97,6 @@ def run_test(params):
     folder = params["path_template"].replace("/%s" % tag, "")
     environment = Environment(loader = FileSystemLoader(folder))
     template = environment.get_template(tag)
-
     # this is where we'll dump the .yaml files that contain job information
     # maybe this can be deleted - we used it to keep track of meep sim jobs when lots of jobs were running in parallel :/
 
@@ -118,7 +117,7 @@ def run_test(params):
     # --- Save job file
 
     save_file(path_job, filled_template)
-
+    from IPython import embed; embed(); exit()
     # --- Launch job
 
     print(f"running kubernetes subprocess...{path_job}")

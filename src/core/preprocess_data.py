@@ -37,7 +37,7 @@ def preprocess_data(raw_data_files = None, path = None):
                                     Loader = yaml.FullLoader)
     pm = parameter_manager.ParameterManager(params = params)
 #    prop = propagator.Propagator(pm.params_propagator)
-
+    
     near_fields = []
 #    far_fields = []
     phases = []
