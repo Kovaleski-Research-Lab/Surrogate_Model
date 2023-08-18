@@ -42,7 +42,7 @@ spec:
           # the command to run when the container starts
           #command: ["python3", "surrogate_model/src/core/preprocess_data.py"]
           command: ["/bin/sh", "-c"]
-          args: ["git clone https://github.com/Kovaleski-Research-Lab/surrogate_model.git .; cd /develop/code/src/core/; python3 preprocess_data.py > /develop/data/spie_journal_2023/train_logs/test.log"]
+          args: ["git clone https://github.com/Kovaleski-Research-Lab/surrogate_model.git .; cd /develop/code/src/core; python3 preprocess_data.py > /develop/data/spie_journal_2023/train_logs/test.log"]
           #args: ["git clone https://github.com/Kovaleski-Research-Lab/surrogate_model.git .; cd /develop/code/src/core/; touch /develop/data/spie_journal_2023/kube_logs/test.txt"]
           # define the resources for this container
           resources:
