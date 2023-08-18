@@ -49,8 +49,9 @@ def preprocess_data(raw_data_files = None, path = None):
        
     for f in tqdm(raw_data_files, desc="Preprocessing data"):
         if '.pkl' in f:
-            path = "/develop/results/"
-            #data = pickle.load(open('"/develop/data/spie_journal_2023/data_subset"'.format(f), 'rb'))
+            path = "/develop/results/" # KUBE
+            #path = "/develop/data/spie_journal_2023/data_subset"
+            
             data = pickle.load(open(os.path.join(path, f), "rb"))
             count += 1
             print(f"count = {count} file = {os.path.join(path,f)}")
@@ -100,13 +101,13 @@ def preprocess_data(raw_data_files = None, path = None):
             'radii' : radii, 
             'phases' : phases,
             'derivatives' : der,}
-    
-    path_save = '/develop/results/preprocessed'
-    torch.save(data, os.path.join(path_save, 'testing_data.pt'))
+    path_save = '/develop/results/preprocessed' #KUBE
+    #path_save = '/develop/data/spie_journal_2023/data_subset/preprocessed'
+    torch.save(data, os.path.join(path_save, 'pp_data.pt'))
 
 if __name__=="__main__":
-    folder = os.listdir('/develop/results')
-    
+    folder = os.listdir('/develop/results') # KUBE
+    #folder = os.listdir('/develop/data/spie_journal_2023/data_subset')
     raw_data_files = []
     for filename in folder:
         if filename.endswith(".pkl"):
