@@ -10,7 +10,7 @@ spec:
         - name: {{job_name}}
           image: {{path_image}}
           command: ["/bin/sh", "-c"]
-          args: ["git clone https://github.com/Kovaleski-Research-Lab/surrogate_model.git .; cd /develop/code/src/core/; python3 /develop/code/src/core/preprocess_data.py -index {{n_index}} -path_out_sims {{path_sims}} -resim 0 > {{path_logs}}/{{n_index}}.log"]
+          args: ["git clone https://github.com/Kovaleski-Research-Lab/surrogate_model.git .; cd /develop/code/src/core; python3 /develop/code/src/core/preprocess_data.py -index {{n_index}} -path_out_sims {{path_sims}} -resim 0 > {{path_logs}}/{{n_index}}.log"]
           resources:
             limits:
               memory: {{num_mem_lim}}
