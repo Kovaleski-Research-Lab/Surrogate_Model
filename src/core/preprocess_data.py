@@ -24,7 +24,7 @@ from core import curvature
 #    return torch.cat(far_fields, dim=0)
 
 def radii_to_phase(radii):
-    mapper = pickle.load(open("/develop/code/surrogate_model/src/core/radii_to_phase.pkl", 'rb'))
+    mapper = pickle.load(open("/develop/code/src/core/radii_to_phase.pkl", 'rb'))
     phases = torch.from_numpy(Polynomial(mapper)(radii.numpy()))
     phases =  torch.clamp(phases, min=-torch.pi, max=torch.pi)
     return phases
@@ -33,7 +33,7 @@ def constrain_values(value):
     return torch.nn.functional.sigmoid(value)
 
 def preprocess_data(raw_data_files = None, path = None):
-    params = yaml.load(open('/develop/code/surrogate_model/src/config.yaml', 'r'),
+    params = yaml.load(open('/develop/code/src/config.yaml', 'r'),
                                     Loader = yaml.FullLoader)
     pm = parameter_manager.ParameterManager(params = params)
 #    prop = propagator.Propagator(pm.params_propagator)
