@@ -49,6 +49,7 @@ def preprocess_data(raw_data_files = None, path = None):
        
     for f in tqdm(raw_data_files, desc="Preprocessing data"):
         if '.pkl' in f:
+
             path = "/develop/results/" # KUBE
             #path = "/develop/data/spie_journal_2023/data_subset"
             
@@ -59,13 +60,13 @@ def preprocess_data(raw_data_files = None, path = None):
             pass
 
         dft_fields = data['near_fields']
-
+        print("dft_fields")
         nf_ex = torch.from_numpy(dft_fields['grating_ex']).unsqueeze(dim=0)
         nf_ey = torch.from_numpy(dft_fields['grating_ey']).unsqueeze(dim=0)
         nf_ez = torch.from_numpy(dft_fields['grating_ez']).unsqueeze(dim=0)
 
         temp = torch.cat([nf_ex, nf_ey, nf_ez], dim=0).unsqueeze(dim=0)
-
+        print("temp")
         near_fields_mag = temp.abs().unsqueeze(dim=2)
         near_fields_angle = temp.angle().unsqueeze(dim=2)
         near_fields.append(torch.cat((near_fields_mag, near_fields_angle), dim=2))
@@ -76,7 +77,7 @@ def preprocess_data(raw_data_files = None, path = None):
         #far_fields_angle = temp.angle().unsqueeze(dim=2)
 
         #far_fields.append(torch.cat((far_fields_mag, far_fields_angle), dim=2))
-
+        print("radii")
         radii.append(torch.from_numpy(np.asarray(data['radii'])).unsqueeze(dim=0))
 
         #temp_phases = radii_to_phase(radii[-1])
@@ -89,7 +90,7 @@ def preprocess_data(raw_data_files = None, path = None):
         temp_der = curvature.get_der_train(temp_phases.view(1,3,3))
         #der.append(constrain_values(temp_der))
         der.append(temp_der)
-    
+        print("bout to save")
     near_fields = torch.cat(near_fields, dim=0).float()
     #far_fields = torch.cat(far_fields, dim=0).float()
     radii = torch.cat(radii, dim=0).float()
