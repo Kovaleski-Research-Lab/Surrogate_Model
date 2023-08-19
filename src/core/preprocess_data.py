@@ -57,7 +57,7 @@ def preprocess_data(raw_data_files = None, path = None):
             count += 1
             print(f"count = {count} file = {os.path.join(path,f)}")
         else:
-            pass
+            continue
 
         dft_fields = data['near_fields']
         print("dft_fields")
