@@ -54,6 +54,7 @@ def preprocess_data(raw_data_files = None, path = None):
             #path = "/develop/data/spie_journal_2023/data_subset"
             
             data = pickle.load(open(os.path.join(path, f), "rb"))
+            print(data.keys())
             count += 1
             print(f"count = {count} file = {os.path.join(path,f)}")
         else:
