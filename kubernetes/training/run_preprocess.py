@@ -128,6 +128,6 @@ if __name__ == "__main__":
     args = parse_args(sys.argv)
     
     params = load_config(args["config"]) 
-
+    print("running job") 
     #atexit.register(exit_handler)  # this is how we clean up jobs. 
     run(params)
