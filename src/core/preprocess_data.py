@@ -138,6 +138,7 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
             wl = ''.join(filter(str.isdigit, key))
             all_near_fields[f'near_fields_{wl}'].append(torch.cat((near_fields_mag, near_fields_angle), dim=2))
         break
+    print("we made it team")
     for key, nf in all_near_fields.items():
         nf = torch.cat(nf, dim=0).float()
     eps_data = torch.cat(eps_data, dim=0).float()
