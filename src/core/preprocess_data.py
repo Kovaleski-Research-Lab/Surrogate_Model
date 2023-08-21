@@ -71,6 +71,7 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
 
     count = 0
     for f in tqdm(raw_data_files, desc="Preprocessing data"):
+        print("do we make it here?")
         if kube is True:
             path = "/develop/results/" # KUBE
             print(f"path: {path}")
