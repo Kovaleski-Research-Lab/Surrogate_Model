@@ -152,7 +152,6 @@ if __name__=="__main__":
     pm = parameter_manager.ParameterManager(params=params)
 
     kube = True
-    print("kube = True") 
     if kube is True:
         folder = os.listdir('/develop/results') # KUBE
     else:

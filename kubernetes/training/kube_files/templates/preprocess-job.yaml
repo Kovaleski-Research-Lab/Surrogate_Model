@@ -11,12 +11,11 @@ spec:
   template:
     spec:
       containers:
-        - name: andy-preprocess
+        - name: preprocessing
           image: docker.io/ctvqfq/bunny_ai:spie-1.2
           #command: ["python3", "surrogate_model/src/core/preprocess_data.py"]
           command: ["/bin/sh", "-c"]
-          args: ["echo hello >> /develop/results/kube_logs/preprocessing.log; git clone https://github.com/Kovaleski-Research-Lab/surrogate_model.git .;
-                    echo pulled down repo >> /develop/results/kube_logs/preprocessing.log;
+          args: ["git clone https://github.com/Kovaleski-Research-Lab/surrogate_model.git .;
                     cd /develop/code/src/core; echo in core directory >> /develop/results/kube_logs/preprocessing.log;
                     python3 /develop/code/src/core/preprocess_data.py >> /develop/results/kube_logs/preprocessing.log"]
           #args: ["git clone https://github.com/Kovaleski-Research-Lab/surrogate_model.git .; cd /develop/code/src/core; python3 preprocess_data.py > /develop/data/spie_journal_2023/train_logs/test.log"]
