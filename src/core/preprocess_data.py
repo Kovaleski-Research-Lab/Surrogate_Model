@@ -148,6 +148,7 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
     torch.save(data, os.path.join(path_save, 'final_test.pt'))
 
 if __name__=="__main__":
+    print("about to load params")
     params = yaml.load(open('../config.yaml'), Loader = yaml.FullLoader).copy()
     pm = parameter_manager.ParameterManager(params=params)
 
