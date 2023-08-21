@@ -5,13 +5,13 @@ kind: Job
 
 # set the name of the job
 metadata:
-  name: training
+  name: preprocessing
 
 spec:
   template:
     spec:
       containers:
-        - name: andy-train
+        - name: andy-preprocess
           image: docker.io/ctvqfq/bunny_ai:spie-1.2
           #command: ["python3", "surrogate_model/src/core/preprocess_data.py"]
           command: ["/bin/sh", "-c"]
