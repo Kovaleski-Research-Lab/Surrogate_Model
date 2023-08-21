@@ -70,7 +70,7 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
         raw_data_files = os.listdir(path)
 
     count = 0
-    print("right before big for loop")
+    print(f"raw data files: {len(raw_data_files)}, {raw_data_files[0]}")
     for f in tqdm(raw_data_files, desc="Preprocessing data"):
         print("do we make it here?")
         if kube is True:
