@@ -124,7 +124,7 @@ def run(params):
     subprocess.run(["kubectl", "apply", "-f", path_job])
     
 if __name__ == "__main__":
-
+    print("running job")
     args = parse_args(sys.argv)
     
     params = load_config(args["config"]) 
