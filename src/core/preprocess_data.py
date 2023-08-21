@@ -144,7 +144,7 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
         path_save = '/develop/results/preprocessed' #KUBE
     else:
         path_save = '/develop/data/spie_journal_2023/testing_new_dataset'
-    torch.save(data, os.path.join(path_save, 'final_test.pt'))
+    torch.save(data, os.path.join(path_save, 'pp_dataset.pt'))
 
 if __name__=="__main__":
     print("about to load params")
