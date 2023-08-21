@@ -92,7 +92,7 @@ def save_file(path, data):
 def run(params):
 
     template = load_file(params["path_template"])
-
+    print("template: ", template)
     tag = params["path_template"].split("/")[-1]
     folder = params["path_template"].replace("/%s" % tag, "")
     environment = Environment(loader = FileSystemLoader(folder))
@@ -103,6 +103,7 @@ def run(params):
     create_folder(params["path_train_job_files"])
 
     job_name = "%s-%s" % (params["kill_tag"], str(params['experiment']).zfill(6))
+    print("job name:", job_name)
 
     template_info = {"job_name": job_name, 
                      #"n_index": str(counter),
@@ -113,7 +114,7 @@ def run(params):
     filled_template = template.render(template_info)
 
     path_job = os.path.join(params["path_train_job_files"], job_name + ".yaml") 
-
+    print("path job: ", path_job)
     # --- Save job file
 
     save_file(path_job, filled_template)

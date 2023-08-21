@@ -12,8 +12,8 @@ path_image: docker.io/ctvqfq/bunny_ai:spie-1.2
 path_template: kube_files/templates/preprocess-job.yaml
 
 path_simulations: /develop/results
-path_logs: /develop/data/spie_journal_2023/train_logs
-path_train_job_files: /develop/data/spie_journal_2023/kube_logs
+path_logs: /develop/results/preprocess_logs
+path_train_job_files: /develop/results/kube_jobs
 
 # Define Computing Environment
 # - num_mem_lim: limits of random access memory
