@@ -73,6 +73,7 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
     for f in tqdm(raw_data_files, desc="Preprocessing data"):
         if kube is True:
             path = "/develop/results/" # KUBE
+            print(f"path: {path}")
         else:
             path = "/develop/data/spie_journal_2023/testing_new_dataset" # LOCAL MARGE
         try:
