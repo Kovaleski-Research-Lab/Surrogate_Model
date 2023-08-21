@@ -76,8 +76,17 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
             path = "/develop/results/" # KUBE
         else:
             path = "/develop/data/spie_journal_2023/testing_new_dataset" # LOCAL MARGE
-        data = pickle.load(open(os.path.join(path, f), "rb"))
-        #embed(); exit()
+        try:
+            with open(os.path.join(path, "rb") as file:
+                data = pickle.load(file)
+            print(f"got it: {file}")
+        except FileNotFoundError:
+            print("pickle error: file not found")
+        except pickle.PickleError:
+            print("pickle error: pickle file error")
+        except Exception as e:
+            print("Some other error: ", e)
+        #data = pickle.load(open(os.path.join(path, f), "rb"))
         count += 1
         print(f"count = {count} file = {f}")
 
