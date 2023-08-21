@@ -70,7 +70,6 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
         raw_data_files = os.listdir(path)
 
     count = 0
-    print("Beginning loop...")
     for f in tqdm(raw_data_files, desc="Preprocessing data"):
         if kube is True:
             path = "/develop/results/" # KUBE
@@ -78,6 +77,7 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
             path = "/develop/data/spie_journal_2023/testing_new_dataset" # LOCAL MARGE
         try:
             filepath = os.path.join(path, f)
+            print(f"loading in {filepath}...")
             with open(filepath, "rb") as file:
                 data = pickle.load(file)
             print(f"got it: {file}")
