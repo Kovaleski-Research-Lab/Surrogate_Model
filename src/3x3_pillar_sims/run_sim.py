@@ -133,7 +133,7 @@ def run(radii_list, neighbor_index, pm, folder_name=None, dataset=None):
     data["eps_data"] = model.eps_data
     data["sim_time"] = elapsed_time
     data["radii"] = radii_list
-    
+    from IPython import embed; embed(); exit() 
     if(dataset is None):
         dump_data(neighbor_index, data, pm) 
     else:

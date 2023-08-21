@@ -137,6 +137,7 @@ class _3x3PillarSim():
             self.sim.run(until=200)
         
     def get_animation(self, params):
+
         # this method does not work with the current Dockerfile. We likely have a bug
         # related to ffmpeg.
  
@@ -151,8 +152,9 @@ class _3x3PillarSim():
                                 realtime = False,
                                 normalize = True,
                                 plot_modifiers = plot_modifiers)
+
         if params['source_type'] == "gaussian":
-            until_after_sources =  mp.stop_when_fields_decayed(dt=50,
+            until_after_sources = mp.stop_when_fields_decayed(dt=50,
                                                         c=params['source_cmpt'],
                                                         pt=mp.Vector3(0, 0, params['fr_center']),
                                                         decay_by=params['decay_rate'])
