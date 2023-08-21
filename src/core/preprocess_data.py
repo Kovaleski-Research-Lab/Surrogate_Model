@@ -77,7 +77,8 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
         else:
             path = "/develop/data/spie_journal_2023/testing_new_dataset" # LOCAL MARGE
         try:
-            with open(os.path.join(path, "rb") as file:
+            filepath = os.path.join(path, f)
+            with open(filepath, "rb") as file:
                 data = pickle.load(file)
             print(f"got it: {file}")
         except FileNotFoundError:
