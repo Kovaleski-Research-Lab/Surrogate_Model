@@ -70,8 +70,8 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
         raw_data_files = os.listdir(path)
 
     count = 0
-    for f in raw_data_files:
-    #for f in tqdm(raw_data_files, desc="Preprocessing data"):
+    #for f in raw_data_files:
+    for f in tqdm(raw_data_files, desc="Preprocessing data"):
         if kube is True:
             path = "/develop/results/" # KUBE
         else:
@@ -135,7 +135,6 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
             near_fields_angle = temp.angle().unsqueeze(dim=2)
             wl = ''.join(filter(str.isdigit, key))
             all_near_fields[f'near_fields_{wl}'].append(torch.cat((near_fields_mag, near_fields_angle), dim=2))
-        break
     for key, nf in all_near_fields.items():
         nf = torch.cat(nf, dim=0).float()
     eps_data = torch.cat(eps_data, dim=0).float()
@@ -159,7 +158,6 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
     torch.save(data, os.path.join(path_save, 'pp_dataset.pt'))
 
 if __name__=="__main__":
-    print("about to load params")
     params = yaml.load(open('../config.yaml'), Loader = yaml.FullLoader).copy()
     pm = parameter_manager.ParameterManager(params=params)
 
