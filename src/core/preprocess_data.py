@@ -70,12 +70,10 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
         raw_data_files = os.listdir(path)
 
     count = 0
-    print(f"raw data files: {len(raw_data_files)}, {raw_data_files[0]}")
-    for f in tqdm(raw_data_files, desc="Preprocessing data"):
-        print("do we make it here?")
+    for f in raw_data_files:
+    #for f in tqdm(raw_data_files, desc="Preprocessing data"):
         if kube is True:
             path = "/develop/results/" # KUBE
-            print(f"path: {path}")
         else:
             path = "/develop/data/spie_journal_2023/testing_new_dataset" # LOCAL MARGE
         try:
@@ -137,8 +135,6 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
             near_fields_angle = temp.angle().unsqueeze(dim=2)
             wl = ''.join(filter(str.isdigit, key))
             all_near_fields[f'near_fields_{wl}'].append(torch.cat((near_fields_mag, near_fields_angle), dim=2))
-        break
-    print("we made it team")
     for key, nf in all_near_fields.items():
         nf = torch.cat(nf, dim=0).float()
     eps_data = torch.cat(eps_data, dim=0).float()
