@@ -109,7 +109,6 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
                     'nf_2881': data['near_fields_2881'],
                   } 
         fr_slice = get_fr_slice(data, pm)
-        embed();exit();
         for key, nf in nf_dict.items(): 
             # nf['ex'], ['ey'], and ['ex'] have shape (x, y, z). Need to get the z slice
             # corresponding to z = fr_center.

@@ -92,7 +92,6 @@ def save_file(path, data):
 def run(params):
 
     template = load_file(params["path_template"])
-    print("template: ", template)
     tag = params["path_template"].split("/")[-1]
     folder = params["path_template"].replace("/%s" % tag, "")
     environment = Environment(loader = FileSystemLoader(folder))
