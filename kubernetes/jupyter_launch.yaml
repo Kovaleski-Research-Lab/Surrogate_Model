@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: jupyter-testing
+  name: jupyter
 spec:
   containers:
     - name: jupyter-testing
