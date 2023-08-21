@@ -16,7 +16,7 @@ spec:
           command: ["/bin/sh", "-c"]
           args: ["git clone https://github.com/Kovaleski-Research-Lab/surrogate_model.git .;
                     cd /develop/code/src/core;
-                    python3 /develop/code/src/core/preprocess_data.py"]
+                    python3 /develop/code/src/core/preprocess_data.py > /develop/results/kube_logs/preprocessing.log"]
           resources:
             limits:
               memory: 240G

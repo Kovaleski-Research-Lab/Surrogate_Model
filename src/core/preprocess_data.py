@@ -70,6 +70,7 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
         raw_data_files = os.listdir(path)
 
     count = 0
+    print("Beginning loop...")
     for f in tqdm(raw_data_files, desc="Preprocessing data"):
         if kube is True:
             path = "/develop/results/" # KUBE
@@ -161,7 +162,7 @@ if __name__=="__main__":
     for filename in folder:
         if filename.endswith(".pkl"):
             raw_data_files.append(filename)
-    print(f'\nFiles to process: {raw_data_files}')
+    print(f'\nNumber of files to process: {len(raw_data_files)}')
     print(" ")
     preprocess_data(pm, kube, raw_data_files = raw_data_files)
     print("\nPreprocess complete")
