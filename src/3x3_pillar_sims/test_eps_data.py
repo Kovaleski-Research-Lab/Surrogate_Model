@@ -5,7 +5,6 @@ import os
 import numpy as np
 
 #### This file just confirms that the pillars are where we think they are.
-#--- We convert
 
 data_path = os.listdir("../results")
 file_name = "000000.pkl"

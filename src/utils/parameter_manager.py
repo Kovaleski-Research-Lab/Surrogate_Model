@@ -239,7 +239,7 @@ class ParameterManager():
         self.plot_plane = mp.Volume(center = mp.Vector3(0,0,0), size = mp.Vector3(self.lattice_size, 0, self.cell_z))    
         self.near_pt = mp.Vector3(0, 0, self.fr_center)
         self.near_vol = mp.Volume(center = mp.Vector3(0,0,0),
-                                    size = mp.Vector3(self.cell_x, self.cell_y, self.non_pml))
+                                size = mp.Vector3(self.cell_x, self.cell_y, self.non_pml))
         self.freq_list = [self.freq_2881, self.freq_1650, self.freq_1550, self.freq_1300, self.freq_1060]
       
         self.collect_params()    

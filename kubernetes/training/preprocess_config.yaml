@@ -9,7 +9,7 @@
 
 #path_image: docker.io/kovaleskilab/meep_ml:spie-1.2
 path_image: docker.io/ctvqfq/bunny_ai:spie-1.2
-path_template: kube_files/templates/gpu-job.yaml
+path_template: kube_files/templates/preprocess-job.yaml
 
 path_simulations: /develop/results
 path_logs: /develop/data/spie_journal_2023/train_logs
@@ -31,7 +31,7 @@ num_parallel_ops: 1
 
 namespace: gpn-mizzou-muem
 kill_time_min: 30
-kill_tag: train
+kill_tag: preprocess
 
 experiment: 1
 num_sims: 1
