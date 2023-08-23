@@ -43,7 +43,7 @@ mcl_params:
 #--------------------------------
 #path_root: '/home/marshall/research/cai_2023'
 path_root: '/develop/'
-path_data: 'data/spie_journal_2023/data_subset/'
+path_data: 'data/spie_journal_2023/kube_dataset/'
 path_train: 'train/'
 path_valid: 'valid/'
 path_model: 'model_checkpoints/'
