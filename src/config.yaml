@@ -5,7 +5,7 @@ resim :
 #--------------------------------
 seed: [True, 1337]
 train: True
-model_id: 'baseline'
+model_id: 'marshallsSolution'
 #torch_home: '~/.cache/torch/'
 torch_home: '/develop/pretrained_models'
 
@@ -14,7 +14,7 @@ torch_home: '/develop/pretrained_models'
 #--------------------------------
 #batch_size: 4
 batch_size: 8
-num_epochs: 5
+num_epochs: 75
 
 accelerator: 'gpu' 
 gpu_config: [True, [0]]
@@ -37,6 +37,7 @@ mcl_params:
     #beta: 1     #far-field
     gamma: 1    #phase
     delta: 0    #derivatives
+    epsilon: 0    #source flux
 
 #--------------------------------
 #       All paths
@@ -44,13 +45,14 @@ mcl_params:
 #path_root: '/home/marshall/research/cai_2023'
 path_root: '/develop/'
 path_data: 'data/spie_journal_2023/kube_dataset/'
+# 
+path_results: 'results/spie_journal_2023/' #params.yaml, train and valid go here.
 path_train: 'train/'
 path_valid: 'valid/'
-path_model: 'model_checkpoints/'
-path_results: 'results/'
-path_checkpoint: 'model_checkpoints/model_baseline_phases_derivatives'
+path_checkpoint: 'checkpoints/'
 path_resims: 'resims/'
 path_dataset: 
+
 #--------------------------------
 #       Physical Params
 #--------------------------------
@@ -71,8 +73,8 @@ wavelength: 1550.e-9
 
 #Fourier propagation
 distance: 10.e-6
-Nxp: 176
-Nyp: 176
+Nxp: 166 # make this dynamic, put in parameter manager. it's data.shape
+Nyp: 166
 Lxp: 2.04e-6
 Lyp: 2.04e-6
 adaptive: True
@@ -82,6 +84,7 @@ adaptive: True
 #--------------------------------
 which: 'CAI'
 n_cpus: 5
+source_wl : 1550
 
 #-------------------------------
 #   General Params - datagen

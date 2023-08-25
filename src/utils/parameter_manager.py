@@ -53,7 +53,7 @@ class ParameterManager():
             # Load: Paths 
             self.path_root = params['path_root']
             self.path_data = params['path_data']
-            self.path_model = params['path_model']
+            #self.path_model = params['path_model']
             self.path_train = params['path_train']
             self.path_valid = params['path_valid']
             self.path_results = params['path_results']
@@ -81,6 +81,7 @@ class ParameterManager():
 
             # Load: Datamodule Params
             self._which = params['which']
+            self._source_wl = params['source_wl']
             self.n_cpus = params['n_cpus']
             
             # Load: Physical Params
@@ -118,9 +119,7 @@ class ParameterManager():
             # Determine the type of experiment we are running
             self.model_id = params['model_id']
          
-            self.path_model = f"{self.path_model}/model_{self.model_id}/"
-            self.path_results = f"{self.path_results}/model_{self.model_id}/"
-            self.results_path = self.path_results
+            self.path_results = f"{self.path_results}/{self.model_id}/"
 
             self.seed_flag, self.seed_value = params['seed']
 
@@ -276,9 +275,10 @@ class ParameterManager():
         #                        }
                 
         self._params_datamodule = {
-                                'Nxp'           : self.Nxp, 
-                                'Nyp'           : self.Nyp, 
+                                #'Nxp'           : self.Nxp, 
+                                #'Nyp'           : self.Nyp, 
                                 'which'         : self._which,
+                                'source_wl'     : self._source_wl,
                                 'n_cpus'        : self.n_cpus,
                                 'path_root'     : self.path_root, 
                                 'path_data'     : self.path_data, 
@@ -313,12 +313,12 @@ class ParameterManager():
         self._all_paths = {
                         'path_root'                     : self.path_root, 
                         'path_data'                     : self.path_data, 
-                        'path_model'                    : self.path_model,
+                        #'path_model'                    : self.path_model,
                         'path_train'                    : self.path_train, 
                         'path_valid'                    : self.path_valid,
                         'path_results'                  : self.path_results, 
-                        'path_model'                    : self.path_model, 
-                        'path_results'                  : self.path_results, 
+                        #'path_model'                    : self.path_model, 
+                        #'path_results'                  : self.path_results, 
                         'path_checkpoint'               : self._path_checkpoint,
                         'path_resims'                   : self.path_resims,
                         'path_dataset'                  : self.path_dataset, 
@@ -509,6 +509,16 @@ class ParameterManager():
     def which(self, value):
         logging.debug("Parameter_Manager | setting which to {}".format(value))
         self._which = value
+        self.collect_params()
+
+    @property
+    def source_wl(self):
+        return self._source_wl
+
+    @source_wl.setter
+    def source_wl(self, value):
+        logging.debug("Parameter_Manager | setting source_wl to {}".format(value))
+        self._source_wl = value
         self.collect_params()
 
     @property

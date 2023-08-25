@@ -44,7 +44,7 @@ def run(params):
     logger = custom_logger.Logger(all_paths=pm.all_paths, name=pm.model_id, version=0)
 
     # Initialize:  PytorchLighting model checkpoint
-    checkpoint_path = os.path.join(pm.path_root, pm.path_model)
+    checkpoint_path = os.path.join(pm.path_root, pm.path_results, pm.path_checkpoint)
     checkpoint_callback = ModelCheckpoint(dirpath = checkpoint_path)
     
     logging.debug(f'Checkpoint path: {checkpoint_path}')
@@ -61,6 +61,7 @@ def run(params):
                           deterministic=True, enable_progress_bar=True, enable_model_summary=True,
                           default_root_dir = pm.path_root, callbacks = [checkpoint_callback]
                           )
+
     else:
         logging.debug("Training with CPUs")
         trainer = Trainer(logger = logger, accelerator = "cpu", max_epochs = pm.num_epochs, 
@@ -69,10 +70,10 @@ def run(params):
 
     #from IPython import embed; embed(); exit()
     # Train
+   
     trainer.fit(model,data) # this calls train_step() and valid_step()
     
     trainer.test(model, dataloaders=[data.val_dataloader(),data.train_dataloader()]) # this calls model.test_step. 
 
     # Dump config
     yaml.dump(params, open(os.path.join(pm.path_root, f'{pm.path_results}/params.yaml'),'w'))
-    

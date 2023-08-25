@@ -24,3 +24,9 @@
 4. go back to the pod and run jupyter lab command. Open a browser and enter the local ip and port number in the addresss bar
     - Example: 127.0.0.1:1099
    You'll be routed to a jupyter page that asks for a token. Use the long hash given in the pod window (copy and paste).
+
+# There's a Mizzou-HPC slack 
+
+1. Ask Dr. Scott to give you access. (Ask Andy first. I might be able to invite you) Then you can tag Alex Hurt and Anes Ouadou with kubernetes questions.
+2. Also, kubernetes support: https://element.nrp-nautilus.io/#/room/#general:matrix.nrp-nautilus.io (You have an account if you completed setp 1 in https://github.com/MU-HPDI/nautilus/wiki/Using-Nautilus-S3.
+

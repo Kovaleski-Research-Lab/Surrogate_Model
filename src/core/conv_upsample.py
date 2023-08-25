@@ -35,16 +35,15 @@ def get_conv_transpose(input_size, in_channels, out_channels, mod_size):
     #Get the next largets output size for the spatial dimensions given the mod size
     for i in range(input_size[0], input_size[0] + mod_size):
         output_size[0] = i
-        if output_size[0] % mod_size == 0 : break # make sure output size is mult of mod_size, if not, keep searching.
+        if output_size[0] % mod_size == 0 : break
+    # make sure output size is mult of mod_size, if not, keep searching.
     for i in range(input_size[1], input_size[1] + mod_size):
         output_size[1] = i
         if output_size[1] % mod_size == 0 : break
-
     #Determine the kernel
     kx = output_size[0] - (input_size[0] - 1)
     ky = output_size[1] - (input_size[1] - 1)
     kernel_size = (ky,kx)
-    
     #Initialize the layer
     layer = torch.nn.ConvTranspose2d(in_channels,  
                                      out_channels, 
