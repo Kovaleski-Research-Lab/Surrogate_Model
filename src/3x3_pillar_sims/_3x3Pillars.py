@@ -81,7 +81,7 @@ class _3x3PillarSim():
         print("downstream_flux_object created")
         temp_fr_center = params['center_source']+ 0.1
         temp_fr = mp.FluxRegion(center = mp.Vector3(0,0,temp_fr_center),
-                                            size = mp.Vector3(params['cell_x'],params['cell_y'], 0))
+                                        size = mp.Vector3(params['cell_x'],params['cell_y'], 0))
 
         self.source_flux_object = self.sim.add_flux(params['fcen'],
                                             params['df'],

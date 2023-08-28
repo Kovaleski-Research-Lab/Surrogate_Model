@@ -5,13 +5,41 @@ import torch
 import pickle
 import numpy as np
 from tqdm import tqdm
-from numpy.polynomial.polynomial import Polynomial
+#from numpy.polynomial.polynomial import Polynomial
+from scipy import interpolate
+from scipy.interpolate import BSpline
 from IPython import embed
 
 sys.path.append('../')
-from utils import mapping, parameter_manager
+from utils import parameter_manager
 from core import curvature
 
+
+def get_Bsplines():
+    # these discrete  values were generated using a single pillar simulation with souce wavelength 1550 nm. 
+    # the simulation was conducted using meep (FDTD) with PML in the z direction and Bloch periodic boundary conditions in x and y.
+    # the results rely on the local phase approximation. 
+    radii = [0.075, 0.0875, 0.1, 0.1125, 0.125, 0.1375, 0.15, 0.1625, 0.175, 0.1875, 0.2, 0.2125, 0.225, 0.2375, 0.25]
+    phase_list = [-3.00185845, -2.89738421, -2.7389328, -2.54946247, -2.26906522, -1.89738599, -1.38868364, -0.78489682, -0.05167712, 0.63232107, 1.22268106, 1.6775137, 2.04169308, 2.34964137, 2.67187105]
+    radii = np.asarray(radii)
+    phase_list = np.asarray(phase_list)
+    
+    # we use a BSpline interpolating function to complete the mapping from radii <-> phase.
+    to_phase = interpolate.splrep(radii, phase_list, s=0, k=3)
+    to_radii = interpolate.splrep(phase_list, radii, s=0, k=3)
+    
+    return to_phase, to_radii
+
+def radii_to_phase(radii):
+    to_phase, _ = get_Bsplines() 
+    phases = torch.from_numpy(interpolate.splev(radii, to_phase))
+    return phases
+
+def phase_to_radii(phases):
+    _, to_radii = get_Bsplines()
+    radii = torch.from_numpy(interpolate.splev(phases, to_radii))
+    return radii
+ 
 # convert a value from micron location to pixel location in the cell. hard coded to the flux region
 # center
 def get_fr_slice(data, pm):
@@ -35,14 +63,16 @@ def get_fr_slice(data, pm):
 
     return temp - pml_pix
 
-def radii_to_phase(kube, radii):
-    if kube is True:
-        mapper = pickle.load(open("/develop/code/src/core/radii_to_phase.pkl", 'rb')) #KUBE
-    else:
-        mapper = pickle.load(open("/develop/code/src/surrogate_model/core/radii_to_phase.pkl", 'rb')) # LOCAL MARGE
-    phases = torch.from_numpy(Polynomial(mapper)(radii.numpy()))
-    phases =  torch.clamp(phases, min=-torch.pi, max=torch.pi)
-    return phases
+# we retired this function because it relies on a polynomial interpolation which is less accurate and far less reliable at the limit
+# than BSplines.
+#def radii_to_phase(kube, radii):
+#    if kube is True:
+#        mapper = pickle.load(open("/develop/code/src/core/radii_to_phase.pkl", 'rb')) #KUBE
+#    else:
+#        mapper = pickle.load(open("/develop/code/src/surrogate_model/core/radii_to_phase.pkl", 'rb')) # LOCAL MARGE
+#    phases = torch.from_numpy(Polynomial(mapper)(radii.numpy()))
+#    phases =  torch.clamp(phases, min=-torch.pi, max=torch.pi)
+#    return phases
 
 def preprocess_data(pm, kube, raw_data_files = None, path = None):
  
@@ -88,7 +118,8 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
             print("pickle error: pickle file error")
         except Exception as e:
             print("Some other error: ", e)
-        #data = pickle.load(open(os.path.join(path, f), "rb"))
+        print("raw data file")
+        embed()
         count += 1
         print(f"count = {count} file = {f}")
 
@@ -102,9 +133,9 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
         flux['downstream_flux'] = torch.from_numpy(np.asarray(data['flux']['downstream_flux']))
         flux_info.append(flux)
         radii.append(torch.from_numpy(np.asarray(data['radii'])).unsqueeze(dim=0))
-        
         # convert radii to phase and collect phase
-        temp_phases = torch.from_numpy(mapping.radii_to_phase(radii[-1]))
+        #temp_phases = torch.from_numpy(radii_to_phase(radii[-1])) i used this to look at an already preprocessed dataset
+        temp_phases = torch.from_numpy(np.asarray(radii_to_phase(radii[-1])))
         phases.append(temp_phases)
         
         # calculate and collect derivatives
@@ -135,6 +166,7 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
             near_fields_angle = temp.angle().unsqueeze(dim=2)
             wl = ''.join(filter(str.isdigit, key))
             all_near_fields[f'near_fields_{wl}'].append(torch.cat((near_fields_mag, near_fields_angle), dim=2))
+        break
     for key, nf in all_near_fields.items():
         nf = torch.cat(nf, dim=0).float()
     eps_data = torch.cat(eps_data, dim=0).float()
@@ -150,7 +182,9 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
             'sim_times' : sim_times,
             'flux_info' : flux_info,
             }
+    print("just compiled dictionary")
 
+    embed(); exit()
     if kube is True:
         path_save = '/develop/results/preprocessed' #KUBE
     else:
@@ -161,7 +195,7 @@ if __name__=="__main__":
     params = yaml.load(open('../config.yaml'), Loader = yaml.FullLoader).copy()
     pm = parameter_manager.ParameterManager(params=params)
 
-    kube = True
+    kube = False
     if kube is True:
         folder = os.listdir('/develop/results') # KUBE
     else:
@@ -175,3 +209,12 @@ if __name__=="__main__":
     print(" ")
     preprocess_data(pm, kube, raw_data_files = raw_data_files)
     print("\nPreprocess complete")
+    
+    ## --- used this block to look at already preprocessed data and compare lagrangian -- #
+    ## --- to BSpline (converting radii to phase).                                     -- #
+    #data = torch.load("/develop/data/spie_journal_2023/kube_dataset/pp_dataset.pt")
+    #radii = data['radii'].numpy()
+
+    #phases = radii_to_phase(radii)
+    #data['phases'] = phases    
+    #embed()

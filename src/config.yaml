@@ -5,7 +5,7 @@ resim :
 #--------------------------------
 seed: [True, 1337]
 train: True
-model_id: 'marshallsSolution'
+model_id: 'sinPhase'
 #torch_home: '~/.cache/torch/'
 torch_home: '/develop/pretrained_models'
 
@@ -14,7 +14,7 @@ torch_home: '/develop/pretrained_models'
 #--------------------------------
 #batch_size: 4
 batch_size: 8
-num_epochs: 75
+num_epochs: 200
 
 accelerator: 'gpu' 
 gpu_config: [True, [0]]
@@ -147,8 +147,8 @@ decay_rate : 0.0001
 #   Simulation Parameters
 #-------------------------
 
-#resolution : 80
-resolution : 10
+resolution : 80
+#resolution : 10
 lattice_size : 0.680
 grid_size : 3 
 

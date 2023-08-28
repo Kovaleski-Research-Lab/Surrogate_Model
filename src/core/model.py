@@ -20,7 +20,6 @@ sys.path.append("../")
 
 from utils import parameter_manager
 from core import curvature
-from core import propagator
 from pytorch_lightning import LightningModule
 from core import conv_upsample
 
@@ -105,9 +104,12 @@ class SurrogateModel(LightningModule):
         #phase = torch.exp(1j * phase)
         #angle = phase.angle()
         #return angle
+    
         return torch.sin(phase) * torch.pi  # first we constrain it by sin which is periodic
                                              # then we mult by pi to scale it
-
+        
+        #phase = phase % (2*torch.pi)
+        #return phase
         #err_complex = torch.conj(phase) * torch.exp(1j * torch.tensor([torch.pi])).to(self.device)
         #err_angle = torch.angle(err_complex)
 
@@ -212,6 +214,7 @@ class SurrogateModel(LightningModule):
         near_fields = near_fields[:,1,:,:,:].float().squeeze() # 1=y component
         radii = radii.squeeze()
         phases = phases.squeeze()
+        phases = self.constrain_phase(phases)
         derivatives = derivatives.squeeze()
         #source_flux = source_flux.squeeze()
 
@@ -254,7 +257,7 @@ class SurrogateModel(LightningModule):
         pred_near_field, pred_phase, pred_derivative = predictions
         #true_near_field, true_radii, true_phase, true_derivative, true_source_flux = batch
         true_near_field, true_radii, true_phase, true_derivative = batch
-        #true_phase = self.constrain_phase(true_phase) 
+        true_phase = self.constrain_phase(true_phase)
 
         if dataloader == 0: #Val dataloader 
             # encoder
@@ -313,7 +316,7 @@ class SurrogateModel(LightningModule):
         else:
             exit()
 
-    def forward(self, x):
+    def forward(self, x): # not exactly the forward pass. depending on if ptlightning called forward from training (grads) or valid (no grads) you ahve grads or not.
         
         # Encoder: Feature Reduction
         x = self.first(x)
@@ -331,7 +334,7 @@ class SurrogateModel(LightningModule):
         # Constrain phase
         phase = self.constrain_phase(phase)
         #embed(); exit()       
-        # do you calculate derivative or after constraining phase? I think after.  
+        # do you calculate derivatives or after constraining phase? I think after.  
         derivatives = self.convert_phase(phase)
 
         # Decoder: Feature Reconstruction
@@ -348,23 +351,18 @@ class SurrogateModel(LightningModule):
 
     def shared_step(self, batch, batch_idx): # training step, valid step, and testing all call this function. 
 
-        #near_fields, radii, phases, derivatives, source_flux = batch
         near_fields, radii, phases, derivatives = batch # from the data, derived from radii
         
         near_fields = near_fields.to(self.device)
         radii = radii.to(self.device)
         phases = phases.to(self.device)
-        #from IPython import embed; embed(); exit()
-        phases = self.constrain_phase(phases)
         derivatives = derivatives.to(self.device)
         #source_flux = source_flux.to(self.device)
            
         #Going to just use the y component for now
         near_fields = near_fields[:,1,:,:,:].float()
-        #far_fields = far_fields[:,1,:,:,:].float()
-        #from IPython import embed; embed(); exit()
-        pred_near_field, pred_phase, pred_derivatives = self.forward(near_fields)
-        #pred_source_flux = caluclate_downstream_flux()
+        pred_near_field, pred_phase, pred_derivatives = self.forward(near_fields) # phases are constrained int eh forward pass
+        #pred_source_flux = calculate_downstream_flux()
         
         return pred_near_field, pred_phase, pred_derivatives
         #return pred_near_field, pred_phase, pred_derivatives, pred_source_flux
@@ -377,7 +375,6 @@ class SurrogateModel(LightningModule):
         loss = self.objective(batch, predictions)
         total_loss = loss['total_loss']
         near_field_loss = loss['near_field_loss']
-        #far_field_loss = loss['far_field_loss']
         phase_loss = loss['phase_loss']
         derivative_loss = loss['derivative_loss']
         #source_flux_loss = loss['source_flux']
@@ -385,7 +382,6 @@ class SurrogateModel(LightningModule):
         #Log the loss
         self.log("train_total_loss", total_loss, prog_bar = True, on_step = False, on_epoch = True, sync_dist = True)
         self.log("train_near_field_loss", near_field_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
-        #self.log("train_far_field_loss", far_field_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
         self.log("train_phase_loss", phase_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
         self.log("train_derivative_loss", derivative_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
         #self.log("source_flux_loss", source_flux_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
@@ -400,7 +396,6 @@ class SurrogateModel(LightningModule):
         loss = self.objective(batch, predictions)
         total_loss = loss['total_loss']
         near_field_loss = loss['near_field_loss']
-        #far_field_loss = loss['far_field_loss']
         phase_loss = loss['phase_loss']
         derivative_loss = loss['derivative_loss']
         #source_flux_loss = loss['source_flux']
@@ -408,7 +403,6 @@ class SurrogateModel(LightningModule):
         #Log the loss
         self.log("val_total_loss", total_loss, prog_bar = True, on_step = False, on_epoch = True, sync_dist = True)
         self.log("val_near_field_loss", near_field_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
-        #self.log("val_far_field_loss", far_field_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
         self.log("val_phase_loss", phase_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
         self.log("val_derivative_loss", derivative_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
         #self.log("source_flux_loss", source_flux_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
@@ -473,7 +467,6 @@ class SurrogateModel(LightningModule):
   
 if __name__ == "__main__":
     
-    from IPython import embed;
     from pytorch_lightning import seed_everything
     from core import datamodule
     seed_everything(1337)

@@ -31,7 +31,7 @@ psnr = PeakSignalNoiseRatio()
 torch.multiprocessing.set_sharing_strategy('file_system')
 
 pl.seed_everything(1337)
-path_results = "/develop/results/"
+path_results = "/develop/results/spie_journal_2023"
 path_resims = "/develop/resims/resim_outputs"
 ckpt_path = f"/develop/model_checkpoints"
 
@@ -41,8 +41,10 @@ colors = ['darkgreen','purple','#4e88d9']
 ###########################
 
 def gather_loss(folder_path):
+    print(folder_path)
     excess = os.path.join(path_results, "model_cai_")
     file_path = os.path.join(folder_path, "params.yaml")
+    print(file_path)
     if os.path.isfile(file_path):
 
         with open(file_path, 'r') as file:
@@ -64,6 +66,10 @@ def gather_loss(folder_path):
             else:
                 key_dict['loss'] = loss
                 return key_dict
+                
+    else:
+        print(f"{file_path} does not exist")
+
 
 def gather_all_loss(path_results, type, backbone):
     dict_list = []
@@ -270,6 +276,7 @@ def get_results(folder_name,target):
 
     train_path = os.path.join(path_results, folder_name, "train_info")
     valid_path = os.path.join(path_results, folder_name, "valid_info")
+    print(train_path, valid_path)
 
     train_results = pickle.load(open(os.path.join(train_path,target),"rb"))
     valid_results = pickle.load(open(os.path.join(valid_path,target),"rb"))
@@ -303,8 +310,8 @@ def get_regression_plots(train_results, valid_results, title, save_fig=False):
     
     valid_phase_truth = valid_results['phase_truth'].flatten()
     valid_phase_pred = valid_results['phase_pred'].flatten()
-    valid_der_truth = train_results['deriv_truth'].flatten()
-    valid_der_pred = train_results['deriv_pred'].flatten()
+    valid_der_truth = valid_results['deriv_truth'].flatten()
+    valid_der_pred = valid_results['deriv_pred'].flatten()
 
     r_sq = get_r_squared(train_phase_truth, train_phase_pred)
     x = np.linspace(-np.pi, np.pi, 100)
@@ -389,11 +396,11 @@ def set_violin_color(vp, color, linewidth=2, linestyle='dotted'):
             part.set_linewidth(linewidth)
             #part.set_dashes(np.array(dashes))
 
-def box_plots(nf_amp_diff, nf_angle_diff, ff_amp_diff, ff_angle_diff, dataset, savefig=False):
+def violin_plots(nf_amp_diff, nf_angle_diff, dataset, savefig=False):
 
-    plt.style.use("seaborn-v0_8-poster")
+    plt.style.use("ggplot")
     
-    num_models = 2       # (integer) This sets how many boxes next to each other per index
+    num_models = 1       # (integer) This sets how many boxes next to each other per index
     buffer = 0.5         # (float)   This sets the spacing between boxes for the same index
     num_values =  2      # (integer) This sets the number of indices (9 for phase, 6 for curvature)
     position_offset = 1  # (integer) This sets the offset of the indices - increase if neighboring 'groups' are too close
@@ -405,23 +412,28 @@ def box_plots(nf_amp_diff, nf_angle_diff, ff_amp_diff, ff_angle_diff, dataset, s
     nf_amp_diff = np.mean(nf_amp_diff, axis=(1,2))
     nf_angle_diff = np.mean(nf_angle_diff, axis=(1,2))
     #bp0 = ax.boxplot((nf_amp_diff, nf_angle_diff), sym='', positions = pos - buffer, widths=0.6)
-    vp0 = ax.violinplot((nf_amp_diff, nf_angle_diff), positions = pos - buffer, widths=0.6, showmeans=True, showmedians=True, showextrema=True, points=len(nf_amp_diff))
+    vp = ax.violinplot((nf_amp_diff, nf_angle_diff), positions = pos, widths=0.6, showmeans=True, showmedians=True, showextrema=True, 
+                       points=len(nf_amp_diff))
 
-    ff_amp_diff = np.mean(ff_amp_diff, axis=(1,2))
-    ff_angle_diff = np.mean(ff_angle_diff, axis=(1,2))
-    #bp1 = ax.boxplot((ff_amp_diff, ff_angle_diff), sym='', positions = pos + buffer, widths=0.6)
-    vp1 = ax.violinplot((ff_amp_diff, ff_angle_diff), positions = pos + buffer, widths=0.6, showmeans=True, showmedians=True, showextrema=True, points=len(nf_amp_diff))
+    vp['bodies'][0].set_facecolor(colors[0])
+    vp['bodies'][0].set_edgecolor(colors[0])
+    vp['bodies'][1].set_facecolor(colors[1])
+    vp['bodies'][1].set_edgecolor(colors[1])
+        #pc.set_linewidth(linewidth)
 
-    # set_box_color(bp0, colors[0], 'solid')
-    # set_box_color(bp1, colors[1], 'solid')
-
-    set_violin_color(vp0, colors[0])
-    set_violin_color(vp1, colors[1])
+    for partname in ('cbars','cmins','cmaxes','cmeans','cmedians'):
+        dashes = (1, 0.2)
+        dashes = [int(dash * 10) for dash in dashes]
+        part = vp[partname]
+        part.set_edgecolor('black')
+        if 'mean' in partname:
+            part.set_linestyle('dotted')
+            part.set_linewidth(1)
     
     ax.tick_params(axis='both', labelsize=fontsize)
     
     ax.set_xticks(range(0, 2*(num_models+position_offset), (num_models+position_offset)))
-    ax.set_xticklabels(['Near Field', 'Far Field'])
+    ax.set_xticklabels(['Amplitude', 'Phase'])
     ax.set_xlim(-(buffer*2), 2*((num_models)+position_offset)-(buffer*2))
     ax.set_ylim(-0.1,4)
     ax.grid(axis='x', which='both', linewidth=0)  # Set linewidth to 0 to hide the grid lines
@@ -431,11 +443,11 @@ def box_plots(nf_amp_diff, nf_angle_diff, ff_amp_diff, ff_angle_diff, dataset, s
     
     #Gotta do this to get the legend
     #Plots empty lines with the correct color and linestyle to match. We will use these in the legend. 
-    ln0, = ax.plot([], c=colors[0], label='Amplitude', linestyle = 'solid')
-    ln1, = ax.plot([], c=colors[1], label='Phase', linestyle = 'solid')
-    leg = ax.legend(handles = [ln0, ln1] , loc='upper left', frameon = True)
+    # ln0, = ax.plot([], c=colors[0], label='Amplitude', linestyle = 'solid')
+    # ln1, = ax.plot([], c=colors[1], label='Phase', linestyle = 'solid')
+    # leg = ax.legend(handles = [ln0, ln1] , loc='upper left', frameon = True)
 
-    leg.get_frame().set_edgecolor('gray')
+    # leg.get_frame().set_edgecolor('gray')
 
     ax.set_title("Reconstruction : {}".format(dataset))
     

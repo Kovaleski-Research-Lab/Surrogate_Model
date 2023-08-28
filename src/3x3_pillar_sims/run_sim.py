@@ -88,7 +88,7 @@ def run(radii_list, neighbor_index, pm, folder_name=None, dataset=None):
     
     # Build DFT monitor and populate field info #
     model.build_dft_mon(pm.flux_params)  
-    
+    from IPython import embed; embed(); exit()
     start_time = time.time()
     model.run_sim(pm.source_params)
     elapsed_time = time.time() - start_time
