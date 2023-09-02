@@ -13,7 +13,7 @@ from torchmetrics import PeakSignalNoiseRatio
 sys.path.append(os.path.dirname(os.getcwd()))
 from utils import parameter_manager
 sys.path.append("../core")
-from core import datamodule, model, custom_logger, curvature, propagator
+from core import datamodule, model, custom_logger, curvature
 from model import SurrogateModel
 from mpl_toolkits.axes_grid1 import AxesGrid
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -41,10 +41,10 @@ colors = ['darkgreen','purple','#4e88d9']
 ###########################
 
 def gather_loss(folder_path):
-    print(folder_path)
+
     excess = os.path.join(path_results, "model_cai_")
     file_path = os.path.join(folder_path, "params.yaml")
-    print(file_path)
+
     if os.path.isfile(file_path):
 
         with open(file_path, 'r') as file:
@@ -276,7 +276,6 @@ def get_results(folder_name,target):
 
     train_path = os.path.join(path_results, folder_name, "train_info")
     valid_path = os.path.join(path_results, folder_name, "valid_info")
-    print(train_path, valid_path)
 
     train_results = pickle.load(open(os.path.join(train_path,target),"rb"))
     valid_results = pickle.load(open(os.path.join(valid_path,target),"rb"))

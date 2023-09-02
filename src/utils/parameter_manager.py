@@ -58,7 +58,7 @@ class ParameterManager():
             self.path_valid = params['path_valid']
             self.path_results = params['path_results']
             self.path_resims = params['path_resims']
-            self._path_checkpoint = params['path_checkpoint']
+            #self._path_checkpoint = params['path_checkpoint']
  
             # Load: Trainer Params
             self.batch_size = params['batch_size']
@@ -118,6 +118,7 @@ class ParameterManager():
 
             # Determine the type of experiment we are running
             self.model_id = params['model_id']
+            self.prev_model_id = params['prev_model_id']
          
             self.path_results = f"{self.path_results}/{self.model_id}/"
 
@@ -255,7 +256,7 @@ class ParameterManager():
                                 'num_classes'           : self.num_classes,
                                 'learning_rate'         : self.learning_rate,
                                 'transfer_learn'        : self.transfer_learn, 
-                                'path_checkpoint'       : self.path_checkpoint,
+                                #'path_checkpoint'       : self.path_checkpoint,
                                 'load_checkpoint'       : self.load_checkpoint,
                                 'objective_function'    : self.objective_function,
                                 'mcl_params'            : self._mcl_params,
@@ -308,6 +309,7 @@ class ParameterManager():
 
                             'data_shape'            : self.data_shape,
                             'model_id'              : self.model_id,
+                            'prev_model_id'         : self.prev_model_id,
                             }
 
         self._all_paths = {
@@ -319,7 +321,7 @@ class ParameterManager():
                         'path_results'                  : self.path_results, 
                         #'path_model'                    : self.path_model, 
                         #'path_results'                  : self.path_results, 
-                        'path_checkpoint'               : self._path_checkpoint,
+                        #'path_checkpoint'               : self._path_checkpoint,
                         'path_resims'                   : self.path_resims,
                         'path_dataset'                  : self.path_dataset, 
                         }
@@ -491,15 +493,15 @@ class ParameterManager():
         self._wavelength = value
         self.collect_params()
     
-    @property
-    def path_checkpoint(self):
-        return self._path_checkpoint
+    #@property
+    #def path_checkpoint(self):
+    #    return self._path_checkpoint
 
-    @path_checkpoint.setter
-    def path_checkpoint(self, value):
-        logging.debug("Parameter_Manager | setting path_checkpoint to {}".format(value))
-        self._path_checkpoint = value
-        self.collect_params()
+    #@path_checkpoint.setter
+    #def path_checkpoint(self, value):
+    #    logging.debug("Parameter_Manager | setting path_checkpoint to {}".format(value))
+    #    self._path_checkpoint = value
+    #    self.collect_params()
 
     @property
     def which(self):

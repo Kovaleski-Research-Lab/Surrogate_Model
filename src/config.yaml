@@ -3,41 +3,42 @@ resim :
 #--------------------------------
 #       General Params - ML
 #--------------------------------
+
+torch_home: '/develop/pretrained_models'
 seed: [True, 1337]
 train: True
-model_id: 'sinPhase'
+model_id: 'baseline_2'
+prev_model_id: 'baseline_1'
 #torch_home: '~/.cache/torch/'
-torch_home: '/develop/pretrained_models'
 
 #--------------------------------
 #       Training Params
 #--------------------------------
-#batch_size: 4
 batch_size: 8
-num_epochs: 200
+num_epochs: 100
 
-accelerator: 'gpu' 
-gpu_config: [True, [0]]
+mcl_params:
+    alpha: 1     #near-field
+    #beta: 1     #far-field
+    gamma: 0    #phase
+    delta: 0   #derivatives
+    epsilon: 0    #source flux
 
-valid_rate: 1
+transfer_learn: False
+load_checkpoint: True
+freeze_encoder: False
 
 weights: 
 num_classes: 1
 optimizer: 'ADAM'
 backbone: 'resnet18'
 learning_rate: 1.e-6
-transfer_learn: False
-load_checkpoint: False
 objective_function: 'mse'
 
-freeze_encoder: False
+accelerator: 'gpu' 
+gpu_config: [True, [0]]
 
-mcl_params:
-    alpha: 0     #near-field
-    #beta: 1     #far-field
-    gamma: 1    #phase
-    delta: 0    #derivatives
-    epsilon: 0    #source flux
+valid_rate: 1
 
 #--------------------------------
 #       All paths
@@ -49,7 +50,6 @@ path_data: 'data/spie_journal_2023/kube_dataset/'
 path_results: 'results/spie_journal_2023/' #params.yaml, train and valid go here.
 path_train: 'train/'
 path_valid: 'valid/'
-path_checkpoint: 'checkpoints/'
 path_resims: 'resims/'
 path_dataset: 
 

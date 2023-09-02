@@ -44,10 +44,10 @@ def run(params):
     logger = custom_logger.Logger(all_paths=pm.all_paths, name=pm.model_id, version=0)
 
     # Initialize:  PytorchLighting model checkpoint
-    checkpoint_path = os.path.join(pm.path_root, pm.path_results, pm.path_checkpoint)
+    checkpoint_path = os.path.join(pm.path_root, "results/spie_journal_2023", pm.model_id, "checkpoints")
     checkpoint_callback = ModelCheckpoint(dirpath = checkpoint_path)
     
-    logging.debug(f'Checkpoint path: {checkpoint_path}')
+    #logging.debug(f'Checkpoint path: {checkpoint_path}')
 
     logging.debug('Setting matmul precision to HIGH')
     torch.set_float32_matmul_precision('high')

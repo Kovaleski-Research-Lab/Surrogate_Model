@@ -35,7 +35,7 @@ class SurrogateModel(LightningModule):
         self.backbone = self.params['backbone']
         self.weights = self.params['weights']
         self.data_shape = torch.tensor(self.params['data_shape'])
-        self.checkpoint_path = self.params['path_checkpoint']
+        #self.checkpoint_path = self.params['path_checkpoint']
         self.freeze_encoder = self.params['freeze_encoder']
 
         self.mcl_params = self.params['mcl_params']
