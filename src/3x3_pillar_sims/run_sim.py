@@ -26,7 +26,7 @@ def dump_geometry_image(model, pm):
     model.sim.plot2D(output_plane = plot_plane)
     plt.savefig("geometry.png")
 
-def dump_data(neighbor_index, data, pm):
+def dump_data(neighbor_index, data, pm): # this is called when we're generating data
     
     #path_save = "/develop/data/spie_journal_2023"
     #folder_path = pm.path_dataset
@@ -53,8 +53,9 @@ def dump_data(neighbor_index, data, pm):
     
     print("\nEverything done\n")
 
-def run(radii_list, neighbor_index, pm, folder_name=None, dataset=None):
+def run(radii_list, neighbor_index, pm, resim, folder_name=None, dataset=None):
 
+    #run(radii_list, idx, pm, resim, exp_name, dataset) # idx identifies the index of results we're getting a resim for
     a = pm.lattice_size
     
     # Initialize model #
@@ -88,7 +89,6 @@ def run(radii_list, neighbor_index, pm, folder_name=None, dataset=None):
     
     # Build DFT monitor and populate field info #
     model.build_dft_mon(pm.flux_params)  
-    from IPython import embed; embed(); exit()
     start_time = time.time()
     model.run_sim(pm.source_params)
     elapsed_time = time.time() - start_time
@@ -133,67 +133,76 @@ def run(radii_list, neighbor_index, pm, folder_name=None, dataset=None):
     data["eps_data"] = model.eps_data
     data["sim_time"] = elapsed_time
     data["radii"] = radii_list
-    from IPython import embed; embed(); exit() 
-    if(dataset is None):
+    #if(dataset is None):
+    if(resim == 0):
         dump_data(neighbor_index, data, pm) 
     else:
-        path_resims = params['path_resims']
         eval_name = f"{folder_name}_{dataset}_{idx}.pkl"
+        path_results = "/develop/results/spie_journal_2023"
+        results_path = os.path.join(path_results, pm.exp_name + "_2", dataset + "_info") 
         filename = os.path.join(path_resims, eval_name)
+        embed();exit()
         with open(filename, "wb") as f:
             pickle.dump(data, f)
 
     #dump_geometry_image(model, pm)
 if __name__=="__main__":
 
-    params = yaml.load(open('../config.yaml'), Loader = yaml.FullLoader).copy()
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-index", type=int, help="The index matching the index in radii_neighbors")
-    parser.add_argument("-resim", type=int, help="True if launching resims, False if generating data")
-    parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to")
-    #parser.add_argument("-path_out_logs", help="This is the path that i/o logs get dumped to")
-
-    #parser.add_argument("-folder_name", help="Contains info about the model", default = None)
-    #parser.add_argument("-dataset", help="Train or Valid", default = None)
-
-    args = parser.parse_args()
-    idx = args.index
-    resim = args.resim
-    params['path_dataset'] = args.path_out_sims
-
     # Run experiment
  
+    params = yaml.load(open('../config.yaml'), Loader = yaml.FullLoader).copy()
     pm = parameter_manager.ParameterManager(params=params)
 
-    #embed()
+    print(f"resolution is {pm.resolution}")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-r0", type=float)
+    parser.add_argument("-r1", type=float)
+    parser.add_argument("-r2", type=float)
+    parser.add_argument("-r3", type=float)
+    parser.add_argument("-r4", type=float)
+    parser.add_argument("-r5", type=float)
+    parser.add_argument("-r6", type=float)
+    parser.add_argument("-r7", type=float)
+    parser.add_argument("-r8", type=float)
+    parser.add_argument("-resim", type=int, help="True (1) if launching resims, False (0) if generating data")
+    parser.add_argument("-index", type=int, help="Index - neighbor index if generating data, if doing resim, a value between 0 and 8") 
+    parser.add_argument("-exp_name", type=str, help="The name of the experiment if we're doing resims")
+    parser.add_argument("-dataset", type=str, help="Train or valid - if we're doing resims")
 
-    # if resim is false then we are generating data.
-    
+    args = parser.parse_args()
+    r0 = args.r0
+    r1 = args.r1
+    r2 = args.r2
+    r3 = args.r3
+    r4 = args.r4
+    r5 = args.r5
+    r6 = args.r6
+    r7 = args.r7
+    r8 = args.r8
+    resim = args.resim
+    idx = args.index
+    exp_name = args.exp_name
+    dataset = args.dataset
+
+    radii_list = [r0, r1, r2, r3, r4, r5, r6, r7, r8] 
+    # if resim is false then we are generating data. This needs to be cleaned up before generating more data. 
     if(resim == 0):
-         
+
+        parser.add_argument("-index", type=int, help="The index matching the index in radii_neighbors")
+        parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to")
+        #parser.add_argument("-path_out_logs", help="This is the path that i/o logs get dumped to")
+
+        #parser.add_argument("-folder_name", help="Contains info about the model", default = None)
+        #parser.add_argument("-dataset", help="Train or Valid", default = None)
+
+        params['path_dataset'] = args.path_out_sims
+    
         neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
         radii_list = neighbors_library[idx]
         
         run(radii_list, idx, pm)
          
     # otherwise we are doing a single resim
-
-    #else:
-    #    folder_name = args.folder_name
-    #    dataset = args.dataset
-
-    #    if dataset == 'train':
-    #        path_results = os.path.join(path_results, folder_name, 'train_info')
-    #    elif dataset == 'valid':
-    #        path_results = os.path.join(path_results, folder_name, 'valid_info')
-    #    else:
-    #        exit()
-    #    
-    #    model_results = pickle.load(open(os.path.join(path_results,'resim.pkl'), 'rb'))
-
-    #    phases = model_results['phase_pred'][idx]
-
-    #    radii_list = mapping.phase_to_radii(phases)
-    #    run(radii_list, idx, pm, folder_name, dataset)
+    else:
+        run(radii_list, idx, pm, resim, exp_name, dataset) # idx identifies the index of results we're getting a resim for
     

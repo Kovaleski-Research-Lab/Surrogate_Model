@@ -117,6 +117,7 @@ class ParameterManager():
             self.data_shape = [1,2,self.Nxp,self.Nyp]
 
             # Determine the type of experiment we are running
+            self.exp_name = params['exp_name']
             self.model_id = params['model_id']
             self.prev_model_id = params['prev_model_id']
          
