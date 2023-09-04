@@ -137,10 +137,11 @@ def run(radii_list, neighbor_index, pm, resim, folder_name=None, dataset=None):
     if(resim == 0):
         dump_data(neighbor_index, data, pm) 
     else:
-        eval_name = f"{folder_name}_{dataset}_{idx}.pkl"
+        embed()
+        eval_name = f"sample_{idx}.pkl"
         path_results = "/develop/results/spie_journal_2023"
-        results_path = os.path.join(path_results, pm.exp_name + "_2", dataset + "_info") 
-        filename = os.path.join(path_resims, eval_name)
+        path_resim = os.path.join(path_results, pm.exp_name + "_2", dataset + "_info") 
+        filename = os.path.join(path_resim, eval_name)
         embed();exit()
         with open(filename, "wb") as f:
             pickle.dump(data, f)
@@ -187,7 +188,7 @@ if __name__=="__main__":
     radii_list = [r0, r1, r2, r3, r4, r5, r6, r7, r8] 
     # if resim is false then we are generating data. This needs to be cleaned up before generating more data. 
     if(resim == 0):
-
+        embed()
         parser.add_argument("-index", type=int, help="The index matching the index in radii_neighbors")
         parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to")
         #parser.add_argument("-path_out_logs", help="This is the path that i/o logs get dumped to")
@@ -200,7 +201,7 @@ if __name__=="__main__":
         neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
         radii_list = neighbors_library[idx]
         
-        run(radii_list, idx, pm)
+        run(radii_list, idx, pm, resim, exp_name, dataset)
          
     # otherwise we are doing a single resim
     else:
