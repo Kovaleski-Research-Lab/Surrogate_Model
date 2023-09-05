@@ -56,21 +56,21 @@ def run(radii_list, index, pm, dataset=None):
     # should make this general, so it is dependent on grid size (currently hardcoded for 3x3) 
     x_list = [-a, 0, a, -a, 0, a, -a, 0, a]
     y_list = [a, a, a, 0, 0, 0, -a, -a, -a]
- 
+    print("just made x_list and y_list") 
     for i, neighbor in enumerate(radii_list):
         pm.radius = neighbor
         pm.x_dim = x_list[i]
         pm.y_dim = y_list[i]
         model.build_geometry(pm.geometry_params)
         pm.geometry.append(model.pillar)
-
+    print("populated the neighborhood")
     # Build Source object #
     model.build_source(pm.source_params)
      
     # Build Simulation object # 
     pm.source = model.source
     model.build_sim(pm.sim_params)
-
+    print("built the sim")
     # Build DFT monitor and populate field info #
     model.build_dft_mon(pm.dft_params)  
     start_time = time.time()
@@ -131,16 +131,12 @@ if __name__=="__main__":
     print(f"resolution is {pm.resolution}")
 
     parser = argparse.ArgumentParser()
-    print("instantiated argparser") 
     parser.add_argument("-index", type=int, help="The index matching the index in radii_neighbors")
     parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to") # this is empty in our config file. gets set in the kubernetes job file
        
     args = parser.parse_args() 
-    print("parsed the args")
     params['path_dataset'] = args.path_out_sims
-    print("set the path")
     idx = args.index 
-    print(f"got through initial params, resim is set to {pm.resim}") 
     if(pm.resim == 0): # we are generating data.
         neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
         radii_list = neighbors_library[idx]
