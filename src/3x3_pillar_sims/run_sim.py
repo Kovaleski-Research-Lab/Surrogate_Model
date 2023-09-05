@@ -132,14 +132,14 @@ if __name__=="__main__":
     print(f"resolution is {pm.resolution}")
 
     parser = argparse.ArgumentParser()
-    
+    print("instantiated argparser") 
     parser.add_argument("-index", type=int, help="The index matching the index in radii_neighbors")
     parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to") # this is empty in our config file. gets set in the kubernetes job file
        
     args = parser.parse_args() 
     params['path_dataset'] = args.path_out_sims
     idx = args.index 
-
+    print(f"got through initial params, resim is set to {resim}") 
     if(pm.resim == 0): # we are generating data.
         neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
         radii_list = neighbors_library[idx]

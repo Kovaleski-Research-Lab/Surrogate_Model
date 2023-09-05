@@ -29,10 +29,10 @@ num_parallel_ops: 5
 
 namespace: gpn-mizzou-muem
 kill_time_min: 30
-kill_tag: preprocess
-#kill_tag: sim
+#kill_tag: preprocess
+kill_tag: sim
 
 # Define Simulation
 
-num_sims: 2000 # this is the ending index
-start_group_id: 1995
+num_sims: 3000 # this is the ending index
+start_group_id: 1489
