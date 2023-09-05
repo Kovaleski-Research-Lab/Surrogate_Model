@@ -43,15 +43,14 @@ def dump_data(neighbor_index, data, pm): # this is called when we're generating 
     print("\nEverything done\n")
 
 def run(radii_list, index, pm, dataset=None):
-    print("just started run()")
     a = pm.lattice_size
     print(a) 
     # Initialize model #
     model = _3x3Pillars._3x3PillarSim()
-    print("model initiated")
+    
     # Build geometry for initial conditions (no pillar) #
     model.build_geometry(pm.geometry_params)
-    print("geometry built")
+    
     pm.geometry = [model.fusedSilica_block, model.PDMS_block]
    
     # should make this general, so it is dependent on grid size (currently hardcoded for 3x3) 
