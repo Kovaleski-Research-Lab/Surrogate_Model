@@ -142,7 +142,7 @@ if __name__=="__main__":
         neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
         radii_list = neighbors_library[idx]
         print("about to run the sim now")
-        run(radii_list, idx, pm, dataset)
+        run(radii_list, idx, pm)
          
     else:
         print("Set resim in config.yaml to 0 for data generation. Run resim.py to do a resim.")
