@@ -43,6 +43,7 @@ def dump_data(neighbor_index, data, pm): # this is called when we're generating 
     print("\nEverything done\n")
 
 def run(radii_list, index, pm, dataset=None):
+    print("just started run()")
     a = pm.lattice_size
     print(a) 
     # Initialize model #
@@ -145,4 +146,3 @@ if __name__=="__main__":
          
     else:
         print("Set resim in config.yaml to 0 for data generation. Run resim.py to do a resim.")
-        exit()    
