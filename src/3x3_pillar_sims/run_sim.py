@@ -118,7 +118,6 @@ def run(radii_list, index, pm, dataset=None):
         path_results = "/develop/results/spie_journal_2023"
         path_resim = os.path.join(path_results, pm.exp_name + "_2", dataset + "_info") 
         filename = os.path.join(path_resim, eval_name)
-        embed();exit()
         with open(filename, "wb") as f:
             pickle.dump(data, f)
 
@@ -141,10 +140,11 @@ if __name__=="__main__":
     params['path_dataset'] = args.path_out_sims
     print("set the path")
     idx = args.index 
-    print(f"got through initial params, resim is set to {resim}") 
+    print(f"got through initial params, resim is set to {pm.resim}") 
     if(pm.resim == 0): # we are generating data.
         neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
         radii_list = neighbors_library[idx]
+        print("about to run the sim now")
         run(radii_list, idx, pm, dataset)
          
     else:
