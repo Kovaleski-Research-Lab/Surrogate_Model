@@ -114,8 +114,7 @@ def run(radii_list, index, pm, dataset=None):
     if(pm.resim == 0):
         dump_data(index, data, pm) 
     else:
-        embed()
-        eval_name = f"sample_{idx}.pkl"
+        eval_name = f"sample_{index}.pkl"
         path_results = "/develop/results/spie_journal_2023"
         path_resim = os.path.join(path_results, pm.exp_name + "_2", dataset + "_info") 
         filename = os.path.join(path_resim, eval_name)
@@ -133,47 +132,19 @@ if __name__=="__main__":
     print(f"resolution is {pm.resolution}")
 
     parser = argparse.ArgumentParser()
-    if pm.resim == 1:
-        parser.add_argument("-r0", type=float)
-        parser.add_argument("-r1", type=float)
-        parser.add_argument("-r2", type=float)
-        parser.add_argument("-r3", type=float)
-        parser.add_argument("-r4", type=float)
-        parser.add_argument("-r5", type=float)
-        parser.add_argument("-r6", type=float)
-        parser.add_argument("-r7", type=float)
-        parser.add_argument("-r8", type=float)
-        parser.add_argument("-index", type=int, help="Index - neighbor index if generating data, if doing resim, a value between 0 and 8") 
-        parser.add_argument("-dataset", type=str, help="Train or valid - if we're doing resims")
-
-        args = parser.parse_args()
-        r0 = args.r0
-        r1 = args.r1
-        r2 = args.r2
-        r3 = args.r3
-        r4 = args.r4
-        r5 = args.r5
-        r6 = args.r6
-        r7 = args.r7
-        r8 = args.r8
-        idx = args.index
-        dataset = args.dataset
-
-        radii_list = [r0, r1, r2, r3, r4, r5, r6, r7, r8] 
-        run(radii_list, idx, pm, dataset) # idx identifies the index of results we're getting a resim for
-
-    elif(pm.resim == 0): # we are generating data.
-        parser.add_argument("-index", type=int, help="The index matching the index in radii_neighbors")
-        parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to") # this is empty in our config file. gets set in the kubernetes job file
+    
+    parser.add_argument("-index", type=int, help="The index matching the index in radii_neighbors")
+    parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to") # this is empty in our config file. gets set in the kubernetes job file
        
-        args = parser.parse_args() 
-        params['path_dataset'] = args.path_out_sims
-        idx = args.index 
+    args = parser.parse_args() 
+    params['path_dataset'] = args.path_out_sims
+    idx = args.index 
 
+    if(pm.resim == 0): # we are generating data.
         neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
         radii_list = neighbors_library[idx]
         run(radii_list, idx, pm, dataset)
          
     else:
-        print("Set resim in config.yaml to 0 for data generation and 1 to run a resim")
+        print("Set resim in config.yaml to 0 for data generation. Run resim.py to do a resim.")
         exit()    

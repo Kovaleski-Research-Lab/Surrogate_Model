@@ -12,38 +12,34 @@ from tqdm import tqdm
 import math
 from IPython import embed
 import sys
+import run_sim
 
 sys.path.append('../')
 from utils import mapping, parameter_manager
 
 if __name__=="__main__":
-    
+   
     params = yaml.load(open('../config.yaml'), Loader = yaml.FullLoader).copy()
     pm = parameter_manager.ParameterManager(params=params)
     pm.resim = 1
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-index", type=int, help="Index - neighbor index if generating data, if doing resim, a value between 0 and 8") 
+    parser.add_argument("-dataset", type=str, help="Train or valid - if we're doing resims")
+    
+    args = parser.parse_args()
+    idx = args.index
+    dataset = args.dataset
+
     path_results = "/develop/results/spie_journal_2023"
 
-    dataset = "valid" # need to change this manually
-    idx = int(0) # this too.
-
+    # Need to get phase values from the model's predictions.
     path_resims = os.path.join(path_results, pm.exp_name + '_2', dataset + '_info') # might need to change this too 
     model_results = pickle.load(open(os.path.join(path_resims,'resim.pkl'), 'rb'))
 
     phases = model_results['phase_pred'][idx]
 
     radii_list = mapping.phase_to_radii(phases)
-    radii_list = np.round(radii_list, 4)
-    r0 = float(radii_list[0])
-    r1 = float(radii_list[1])
-    r2 = float(radii_list[2])
-    r3 = float(radii_list[3])
-    r4 = float(radii_list[4])
-    r5 = float(radii_list[5])
-    r6 = float(radii_list[6])
-    r7 = float(radii_list[7])
-    r8 = float(radii_list[8])
-    sys.path.append('/develop/code/surrogate_model/src/3x3_pillar_sims')
-    cmd = f'mpirun -np 2 python3 run_sim.py -r0 {r0} -r1 {r1} -r2 {r2} -r3 {r3} -r4 {r4} -r5 {r5} -r6 {r6} -r7 {r7} -r8 {r8} -index {idx} -dataset {dataset}'
-    #cmd = f"mpirun --allow-run-as-root -np 32 python3 run_sim.py -r0 {r0} -r1 {r1} -r2 {r2} -r3 {r3} -r4 {r4} -r5 {r5} -r6 {r6} -r7 {r7} -r8 {r8} -index {i}, -folder_name {folder_name}"
-    os.system(cmd)
+    radii_list = np.round(radii_list, 6)
+    run_sim.run(radii_list, idx, pm, dataset) # idx identifies the index of results we're getting a resim for
+    

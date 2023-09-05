@@ -314,7 +314,7 @@ class ParameterManager():
                             'source_cmpt'           : self.source_cmpt,
                             'mon_center'            : self.mon_center,
                             'decay_rate'            : self.decay_rate,
-
+                            'source_type'           : self._source_type,
                             }
 
         self._dft_params = {
@@ -517,8 +517,8 @@ class ParameterManager():
         self.calculate_dependencies()
 
     @property
-    def material_params(self):
-        return self._material_params
+    def geometry_params(self):
+        return self._geometry_params
 
     @property
     def source_params(self):
@@ -529,8 +529,8 @@ class ParameterManager():
         return self._sim_params
 
     @property
-    def flux_params(self):
-        return self._flux_params
+    def dft_params(self):
+        return self._dft_params
 
     @property
     def animation_params(self):
