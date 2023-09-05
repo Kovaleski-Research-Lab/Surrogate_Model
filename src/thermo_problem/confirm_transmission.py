@@ -37,6 +37,7 @@ def get_intensity(Ex, Ey, Ez):
     return(np.mean(I))
 
 resolution = 80
+#resolution = 10
 
 n_fusedSilica = 1.44
 n_PDMS = 1.4
@@ -144,6 +145,7 @@ for i, neighbor in enumerate(radii_list):
 
 pbar = tqdm(total=num,leave=False)
 central_index = None
+central_pillars = []
 for i,radius in enumerate(np.linspace(0.075,0.25,num=num)):
     for j, pillar in enumerate(geometry):
         if pillar.center == mp.Vector3(0,0,center_pillar):
@@ -174,7 +176,14 @@ for i,radius in enumerate(np.linspace(0.075,0.25,num=num)):
     data[0,i] = radius
     #data[1,i] = dfts 
     dfts.append([sim.get_dft_array(dft_object, mp.Ex, 2), sim.get_dft_array(dft_object, mp.Ey, 2), sim.get_dft_array(dft_object, mp.Ez, 2)])
-
+    central_pillars.append(radius)
+    temp = {}
+    temp['initial']=initial_dft
+    temp['temp_dfts']=dfts
+    temp['neighbors']=radii_list
+    temp['central_pillars'] = central_pillars
+    with open("temp/temp_results.pkl", "wb") as f:
+        pickle.dump(temp, f)
     pbar.update(1)
 pbar.close()
 
