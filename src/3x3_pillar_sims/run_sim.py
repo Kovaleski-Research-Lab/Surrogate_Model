@@ -27,18 +27,7 @@ def dump_geometry_image(model, pm):
     plt.savefig("geometry.png")
 
 def dump_data(neighbor_index, data, pm): # this is called when we're generating data
-    
-    #path_save = "/develop/data/spie_journal_2023"
-    #folder_path = pm.path_dataset
-    #folder_name = "gaussian_dataset"
-    #folder_path = os.path.join(path_save, folder_name)
-
-    #if not os.path.exists(folder_path):
-    #    os.makedirs(folder_path)
-    #    print("Folder path created.")
-    #else:
-    #    print("Folder path already exists")
-
+     
     folder_path_sims = pm.path_dataset
 
     sim_name = "%s.pkl" % (str(neighbor_index).zfill(6))
@@ -53,8 +42,7 @@ def dump_data(neighbor_index, data, pm): # this is called when we're generating 
     
     print("\nEverything done\n")
 
-def run(radii_list, neighbor_index, pm, resim, folder_name=None, dataset=None):
-
+def run(radii_list, index, pm, dataset=None):
     #run(radii_list, idx, pm, resim, exp_name, dataset) # idx identifies the index of results we're getting a resim for
     a = pm.lattice_size
     
@@ -62,7 +50,7 @@ def run(radii_list, neighbor_index, pm, resim, folder_name=None, dataset=None):
     model = _3x3Pillars._3x3PillarSim()
 
     # Build geometry for initial conditions (no pillar) #
-    model.build_geometry(pm.material_params)
+    model.build_geometry(pm.geometry_params)
     pm.geometry = [model.fusedSilica_block, model.PDMS_block]
    
     # should make this general, so it is dependent on grid size (currently hardcoded for 3x3) 
@@ -73,7 +61,7 @@ def run(radii_list, neighbor_index, pm, resim, folder_name=None, dataset=None):
         pm.radius = neighbor
         pm.x_dim = x_list[i]
         pm.y_dim = y_list[i]
-        model.build_geometry(pm.material_params)
+        model.build_geometry(pm.geometry_params)
         pm.geometry.append(model.pillar)
 
     # Build Source object #
@@ -83,27 +71,16 @@ def run(radii_list, neighbor_index, pm, resim, folder_name=None, dataset=None):
     pm.source = model.source
     model.build_sim(pm.sim_params)
 
-    # Build flux monitor #    
-    model.build_flux_mon(pm.flux_params)
-    model.flux_mon = [model.downstream_flux_object, model.source_flux_object]
-    
     # Build DFT monitor and populate field info #
-    model.build_dft_mon(pm.flux_params)  
+    model.build_dft_mon(pm.dft_params)  
     start_time = time.time()
-    model.run_sim(pm.source_params)
+    model.run_sim(pm.sim_params)
     elapsed_time = time.time() - start_time
     elapsed_time = round(elapsed_time / 60,2)
 
-    source_flux = mp.get_fluxes(model.source_flux_object)[0]
-    downstream_flux = mp.get_fluxes(model.downstream_flux_object)[0]
-
-    model.collect_field_info(pm.source_params)
+    model.collect_field_info()
        
     data = {}
-
-    data["flux"] = {}
-    data["flux"]["source_flux"] = source_flux
-    data["flux"]["downstream_flux"] = downstream_flux
 
     data["near_fields_1550"] = {}
     data["near_fields_1550"]["ex"] = model.dft_field_ex_1550
@@ -133,9 +110,9 @@ def run(radii_list, neighbor_index, pm, resim, folder_name=None, dataset=None):
     data["eps_data"] = model.eps_data
     data["sim_time"] = elapsed_time
     data["radii"] = radii_list
-    #if(dataset is None):
-    if(resim == 0):
-        dump_data(neighbor_index, data, pm) 
+    
+    if(pm.resim == 0):
+        dump_data(index, data, pm) 
     else:
         embed()
         eval_name = f"sample_{idx}.pkl"
@@ -153,57 +130,50 @@ if __name__=="__main__":
  
     params = yaml.load(open('../config.yaml'), Loader = yaml.FullLoader).copy()
     pm = parameter_manager.ParameterManager(params=params)
-
     print(f"resolution is {pm.resolution}")
+
     parser = argparse.ArgumentParser()
-    parser.add_argument("-r0", type=float)
-    parser.add_argument("-r1", type=float)
-    parser.add_argument("-r2", type=float)
-    parser.add_argument("-r3", type=float)
-    parser.add_argument("-r4", type=float)
-    parser.add_argument("-r5", type=float)
-    parser.add_argument("-r6", type=float)
-    parser.add_argument("-r7", type=float)
-    parser.add_argument("-r8", type=float)
-    parser.add_argument("-resim", type=int, help="True (1) if launching resims, False (0) if generating data")
-    parser.add_argument("-index", type=int, help="Index - neighbor index if generating data, if doing resim, a value between 0 and 8") 
-    parser.add_argument("-exp_name", type=str, help="The name of the experiment if we're doing resims")
-    parser.add_argument("-dataset", type=str, help="Train or valid - if we're doing resims")
+    if pm.resim == 1:
+        parser.add_argument("-r0", type=float)
+        parser.add_argument("-r1", type=float)
+        parser.add_argument("-r2", type=float)
+        parser.add_argument("-r3", type=float)
+        parser.add_argument("-r4", type=float)
+        parser.add_argument("-r5", type=float)
+        parser.add_argument("-r6", type=float)
+        parser.add_argument("-r7", type=float)
+        parser.add_argument("-r8", type=float)
+        parser.add_argument("-index", type=int, help="Index - neighbor index if generating data, if doing resim, a value between 0 and 8") 
+        parser.add_argument("-dataset", type=str, help="Train or valid - if we're doing resims")
 
-    args = parser.parse_args()
-    r0 = args.r0
-    r1 = args.r1
-    r2 = args.r2
-    r3 = args.r3
-    r4 = args.r4
-    r5 = args.r5
-    r6 = args.r6
-    r7 = args.r7
-    r8 = args.r8
-    resim = args.resim
-    idx = args.index
-    exp_name = args.exp_name
-    dataset = args.dataset
+        args = parser.parse_args()
+        r0 = args.r0
+        r1 = args.r1
+        r2 = args.r2
+        r3 = args.r3
+        r4 = args.r4
+        r5 = args.r5
+        r6 = args.r6
+        r7 = args.r7
+        r8 = args.r8
+        idx = args.index
+        dataset = args.dataset
 
-    radii_list = [r0, r1, r2, r3, r4, r5, r6, r7, r8] 
-    # if resim is false then we are generating data. This needs to be cleaned up before generating more data. 
-    if(resim == 0):
-        embed()
+        radii_list = [r0, r1, r2, r3, r4, r5, r6, r7, r8] 
+        run(radii_list, idx, pm, dataset) # idx identifies the index of results we're getting a resim for
+
+    elif(pm.resim == 0): # we are generating data.
         parser.add_argument("-index", type=int, help="The index matching the index in radii_neighbors")
-        parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to")
-        #parser.add_argument("-path_out_logs", help="This is the path that i/o logs get dumped to")
-
-        #parser.add_argument("-folder_name", help="Contains info about the model", default = None)
-        #parser.add_argument("-dataset", help="Train or Valid", default = None)
-
+        parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to") # this is empty in our config file. gets set in the kubernetes job file
+       
+        args = parser.parse_args() 
         params['path_dataset'] = args.path_out_sims
-    
+        idx = args.index 
+
         neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
         radii_list = neighbors_library[idx]
-        
-        run(radii_list, idx, pm, resim, exp_name, dataset)
+        run(radii_list, idx, pm, dataset)
          
-    # otherwise we are doing a single resim
     else:
-        run(radii_list, idx, pm, resim, exp_name, dataset) # idx identifies the index of results we're getting a resim for
-    
+        print("Set resim in config.yaml to 0 for data generation and 1 to run a resim")
+        exit()    

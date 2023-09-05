@@ -15,16 +15,8 @@ import time
 sys.path.append("../")
 from utils import parameter_manager
 
-def mod_axes(ax):
-
-    font = {'size': 14}
-
-    ax.set_xlabel('X [$\mu$m]', fontdict = font)
-    ax.set_ylabel('Z [$\mu$m]', fontdict = font)
-    ax.tick_params(axis='both', labelsize = 14)
-    return ax
-
 class _3x3PillarSim():
+
     def __init__(self):
 
         logging.debug(" Initializing Single Pillar Sim")
@@ -39,11 +31,12 @@ class _3x3PillarSim():
                                     center=mp.Vector3(0,0,params['center_PDMS']),
                                     material=mp.Medium(index=params['n_PDMS']))
         if params['radius'] is not None:
-            self.pillar =           mp.Cylinder(radius=params['radius'],
-                                        height=params['height_pillar'],
-                                        axis=mp.Vector3(0,0,1),
-                                        center=mp.Vector3(params['x_dim'],params['y_dim'],params['center_pillar']),
-                                        material=mp.Medium(index=params['n_amorphousSi'])) 
+            self.pillar =       mp.Cylinder(radius=params['radius'],
+                                    height=params['height_pillar'],
+                                    axis=mp.Vector3(0,0,1),
+                                    center=mp.Vector3(params['x_dim'],
+                                                        params['y_dim'],params['center_pillar']),
+                                    material=mp.Medium(index=params['n_amorphousSi'])) 
 
     def build_source(self, params):
         print("building source")
@@ -67,70 +60,49 @@ class _3x3PillarSim():
                                 sources = self.source,
                                 k_point = params['k_point'],
                                 boundary_layers = params['pml_layers'],
-                                symmetries = params['symmetries'],
                                 resolution = params['resolution'])
-
-    def build_flux_mon(self, params):
-        print("building flux monitor")
-        self.downstream_flux_object = self.sim.add_flux(params['fcen'], 
-                                             params['df'],
-                                             params['nfreq'],
-                                             params['fr'])
-
-        # we want this flux monitor to be just past the source, not right on top of it.
-        print("downstream_flux_object created")
-        temp_fr_center = params['center_source']+ 0.1
-        temp_fr = mp.FluxRegion(center = mp.Vector3(0,0,temp_fr_center),
-                                        size = mp.Vector3(params['cell_x'],params['cell_y'], 0))
-
-        self.source_flux_object = self.sim.add_flux(params['fcen'],
-                                            params['df'],
-                                            params['nfreq'],
-                                            temp_fr)
-        print("source_flux_object created")
-
+ 
     def build_dft_mon(self, params):
 
-        cs = [mp.Ex, mp.Ey, mp.Ez]
-        freq = params['freq_list']
-        where = params['near_vol']
+        #cs = [mp.Ex, mp.Ey, mp.Ez]
+        #freq = params['freq_list']
+        #where = params['near_vol']
          
-        self.near_fields = self.sim.add_dft_fields(cs, freq, where=where)
+        self.monitor = self.sim.add_dft_fields(params['cs'], params['freq_list'], where=params['near_vol'])
 
- 
-    def collect_field_info(self, params):
+    def collect_field_info(self):
      
         # the third parameter (type=int) takes the index of params['freq_list']
         # params['freq_list'] is set in parameter_manager.calculate_dependencies()
         # and looks like: [freq_2881, freq_1650, freq_1550, freq_1300, freq_1060] 
-        self.dft_field_ex_2881 = self.sim.get_dft_array(self.near_fields, mp.Ex, 0)
-        self.dft_field_ey_2881 = self.sim.get_dft_array(self.near_fields, mp.Ey, 0)
-        self.dft_field_ez_2881 = self.sim.get_dft_array(self.near_fields, mp.Ez, 0)
+        self.dft_field_ex_2881 = self.sim.get_dft_array(self.monitor, mp.Ex, 0)
+        self.dft_field_ey_2881 = self.sim.get_dft_array(self.monitor, mp.Ey, 0)
+        self.dft_field_ez_2881 = self.sim.get_dft_array(self.monitor, mp.Ez, 0)
 
-        self.dft_field_ex_1650 = self.sim.get_dft_array(self.near_fields, mp.Ex, 1)
-        self.dft_field_ey_1650 = self.sim.get_dft_array(self.near_fields, mp.Ey, 1)
-        self.dft_field_ez_1650 = self.sim.get_dft_array(self.near_fields, mp.Ez, 1)
+        self.dft_field_ex_1650 = self.sim.get_dft_array(self.monitor, mp.Ex, 1)
+        self.dft_field_ey_1650 = self.sim.get_dft_array(self.monitor, mp.Ey, 1)
+        self.dft_field_ez_1650 = self.sim.get_dft_array(self.monitor, mp.Ez, 1)
 
-        self.dft_field_ex_1550 = self.sim.get_dft_array(self.near_fields, mp.Ex, 2)
-        self.dft_field_ey_1550 = self.sim.get_dft_array(self.near_fields, mp.Ey, 2)
-        self.dft_field_ez_1550 = self.sim.get_dft_array(self.near_fields, mp.Ez, 2)
+        self.dft_field_ex_1550 = self.sim.get_dft_array(self.monitor, mp.Ex, 2)
+        self.dft_field_ey_1550 = self.sim.get_dft_array(self.monitor, mp.Ey, 2)
+        self.dft_field_ez_1550 = self.sim.get_dft_array(self.monitor, mp.Ez, 2)
 
-        self.dft_field_ex_1300 = self.sim.get_dft_array(self.near_fields, mp.Ex, 3)
-        self.dft_field_ey_1300 = self.sim.get_dft_array(self.near_fields, mp.Ey, 3)
-        self.dft_field_ez_1300 = self.sim.get_dft_array(self.near_fields, mp.Ez, 3)
+        self.dft_field_ex_1300 = self.sim.get_dft_array(self.monitor, mp.Ex, 3)
+        self.dft_field_ey_1300 = self.sim.get_dft_array(self.monitor, mp.Ey, 3)
+        self.dft_field_ez_1300 = self.sim.get_dft_array(self.monitor, mp.Ez, 3)
 
-        self.dft_field_ex_1060 = self.sim.get_dft_array(self.near_fields, mp.Ex, 4)
-        self.dft_field_ey_1060 = self.sim.get_dft_array(self.near_fields, mp.Ey, 4)
-        self.dft_field_ez_1060 = self.sim.get_dft_array(self.near_fields, mp.Ez, 4)
+        self.dft_field_ex_1060 = self.sim.get_dft_array(self.monitor, mp.Ex, 4)
+        self.dft_field_ey_1060 = self.sim.get_dft_array(self.monitor, mp.Ey, 4)
+        self.dft_field_ez_1060 = self.sim.get_dft_array(self.monitor, mp.Ez, 4)
 
         self.eps_data = self.sim.get_epsilon()
 
     def run_sim(self, params):
         print("running sim")
         if params['source_type'] == "gaussian":
-            self.sim.run(until_after_sources = mp.stop_when_fields_decayed(dt = 50,
+            self.sim.run(until_after_sources = mp.stop_when_fields_decayed(dt = params['dt'],
                                                         c = params['source_cmpt'],
-                                                        pt = mp.Vector3(0, 0, params['fr_center']),
+                                                        pt = mp.Vector3(0, 0, params['mon_center']),
                                                         decay_by = params['decay_rate'])) # see gaussian_vs_continous.ipynb for justification of 1e-3 for decay rate
 
         elif params['source_type'] == "continuous":

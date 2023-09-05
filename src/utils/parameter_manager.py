@@ -82,52 +82,15 @@ class ParameterManager():
             # Load: Datamodule Params
             self._which = params['which']
             self._source_wl = params['source_wl']
-            self.n_cpus = params['n_cpus']
-            
-            # Load: Physical Params
-            self._distance = params['distance']
-            if(not(isinstance(self._distance, torch.Tensor))):
-                self._distance = torch.tensor(self._distance)
-            self._wavelength = torch.tensor(float(params['wavelength']))
-
-            # Propagator
-            self.Nxp = params['Nxp']
-            self.Nyp = params['Nyp']
-            self.Lxp = params['Lxp']
-            self.Lyp = params['Lyp']
-            self._adaptive = params['adaptive']
-
-            # Load: Metasurface Simulation Params
-            self.Nx_metaAtom = params['Nx_metaAtom'] 
-            self.Ny_metaAtom = params['Ny_metaAtom'] 
-        
-            self.Lx_metaAtom = params['Lx_metaAtom']
-            self.Ly_metaAtom = params['Ly_metaAtom']
-
-            self.n_fusedSilica = params['n_fusedSilica']
-            self.n_PDMS = params['n_PDMS']
-            self.n_amorphousSilica = params['n_amorphousSi']
-
-            self.h_pillar = params['h_pillar']
-            self.thickness_pml = params['thickness_pml']
-            self.thickness_fusedSilica = params['thickness_fusedSilica']
-            self.thickness_PDMS = params['thickness_PDMS']
-            
-            # Datashape from the sim information
-            self.data_shape = [1,2,self.Nxp,self.Nyp]
-
+            self.n_cpus = params['n_cpus']            
+           
             # Determine the type of experiment we are running
             self.exp_name = params['exp_name']
             self.model_id = params['model_id']
             self.prev_model_id = params['prev_model_id']
          
             self.path_results = f"{self.path_results}/{self.model_id}/"
-
             self.seed_flag, self.seed_value = params['seed']
-
-
-
-
 
             # Now, datagen params:   
             self.n_fusedSilica = params['n_fusedSilica']
@@ -162,18 +125,16 @@ class ParameterManager():
             self.freq_1060 = params['freq_1060']
             self.freq_1650 = params['freq_1650']
             self.freq_2881 = params['freq_2881']
-            #self.lambda_min = params['lambda_min']
-            #self.lambda_max = params['lambda_max']
-            #self.f_min = params['f_min']
-            #self.f_max = params['f_max']
             self.fcen = params['fcen']
             self.fwidth = params['fwidth']
+
             self.k_point = params['k_point']
             self.center_source = params['center_source']
             self.source_cmpt = params['source_cmpt']
             self._source_type = params['source_type']
             self._decay_rate = params['decay_rate']
             self._source = params['source']
+            self.dt = params['dt']
             
             self.resolution = params['resolution']
             self.lattice_size = params['lattice_size']
@@ -184,18 +145,23 @@ class ParameterManager():
             self.cell_size = params['cell_size']
             self.pml_layers = params['pml_layers']
             self._symmetries = params['symmetries']
+            
+            self.Nxp = params['Nxp']
+            self.Nyp = params['Nyp']
+    
+             # Datashape from the sim information
+            self.data_shape = [1,2,self.Nxp,self.Nyp]
 
             self.nfreq = params['nfreq']
             self.df = params['df']
-            self.fr_center = params['fr_center']
-            self._fr = params['fr']
+            self.mon_center = params['mon_center']
             self.freq_list = params['freq_list']
+            self.cs = params['cs']
  
             self.plot_plane = params['plot_plane']
             self.fps = params['fps']
             
             self.path_dataset = params['path_dataset']
-
 
         except Exception as e:
             logging.error(e)
@@ -204,17 +170,18 @@ class ParameterManager():
     
     def calculate_dependencies(self):
         
-        self.cell_z = round(2 * self.pml_thickness + self.width_PDMS + self.height_pillar +  self.width_fusedSilica, 3)
-        self.center_PDMS = round(0.5*(self.height_pillar + self.width_PDMS + self.pml_thickness) + (self.pml_thickness + self.width_fusedSilica) - 0.5 * self.cell_z, 3) 
-        self.center_fusedSilica = round(0.5 * (self.pml_thickness + self.width_fusedSilica) - 0.5 * self.cell_z, 3)
-        self.center_pillar = round(self.pml_thickness + self.width_fusedSilica + 0.5 * self.height_pillar- 0.5 * self.cell_z, 3)  
+        self.cell_z = (round(2 * self.pml_thickness + self.width_PDMS + self.height_pillar + 
+                            self.width_fusedSilica, 3))
+        self.center_PDMS = (round(0.5*(self.height_pillar + self.width_PDMS + self.pml_thickness)
+                                + (self.pml_thickness + self.width_fusedSilica) - 0.5 * self.cell_z, 3)) 
+        self.center_fusedSilica = (round(0.5 * (self.pml_thickness + self.width_fusedSilica) -
+                                0.5 * self.cell_z, 3))
+        self.center_pillar = (round(self.pml_thickness + self.width_fusedSilica +
+                                0.5 * self.height_pillar- 0.5 * self.cell_z, 3))  
         self.z_fusedSilica = self.pml_thickness + self.width_fusedSilica
         self.z_PDMS = self.height_pillar + self.width_PDMS + self.pml_thickness
         self.non_pml = self.cell_z - (2 * self.pml_thickness)
  
-        #self.f_min = 1 / self.lambda_max
-        #self.f_max = 1 / self.lambda_min
-        #self.fcen = 0.5 * (self.f_min + self.f_max)
         self.freq_1550 = 1 / self.wavelength_1550
         self.freq_1060 = 1 / self.wavelength_1060
         self.freq_1300 = 1 / self.wavelength_1300
@@ -225,7 +192,8 @@ class ParameterManager():
         self.fwidth = 1.2 * self.fcen
 
         self.k_point = mp.Vector3(0, 0, 0)
-        self.center_source = round(self.pml_thickness + self.width_fusedSilica * 0.2 - 0.5 * self.cell_z, 3) 
+        self.center_source = (round(self.pml_thickness + self.width_fusedSilica * 0.2 -
+                                0.5 * self.cell_z, 3))
         self.source_cmpt = mp.Ey
         self._symmetries = self.symmetries
         
@@ -234,14 +202,14 @@ class ParameterManager():
         self.cell_size = mp.Vector3(self.cell_x, self.cell_y, self.cell_z)
         self.pml_layers = [mp.PML(thickness = self.pml_thickness, direction = mp.Z)]
         
-        self.fr_center = round(0.5 * self.cell_z - self.pml_thickness - 0.3 * self.width_PDMS, 3)
-        self._fr = mp.FluxRegion(center = mp.Vector3(0,0,self.fr_center),
-                                    size=mp.Vector3(self.cell_x, self.cell_y, 0))
-        self.plot_plane = mp.Volume(center = mp.Vector3(0,0,0), size = mp.Vector3(self.lattice_size, 0, self.cell_z))    
-        self.near_pt = mp.Vector3(0, 0, self.fr_center)
+        self.mon_center = round(0.5 * self.cell_z - self.pml_thickness - 0.3 * self.width_PDMS, 3)
+        self.plot_plane = mp.Volume(center = mp.Vector3(0,0,0),
+                                    size = mp.Vector3(self.lattice_size, 0, self.cell_z))    
+        self.near_pt = mp.Vector3(0, 0, self.mon_center)
         self.near_vol = mp.Volume(center = mp.Vector3(0,0,0),
                                 size = mp.Vector3(self.cell_x, self.cell_y, self.non_pml))
         self.freq_list = [self.freq_2881, self.freq_1650, self.freq_1550, self.freq_1300, self.freq_1060]
+        self.cs = [mp.Ex, mp.Ey, mp.Ez]
       
         self.collect_params()    
 
@@ -263,22 +231,10 @@ class ParameterManager():
                                 'mcl_params'            : self._mcl_params,
                                 'freeze_encoder'        : self.freeze_encoder,
                                 }
-
-             
-        #self._params_propagator = {
-        #                        'Nxp'           : self.Nxp, 
-        #                        'Nyp'           : self.Nyp, 
-        #                        'Lxp'           : self.Lxp, 
-        #                        'Lyp'           : self.Lyp,
-        #                        'distance'      : self._distance,
-        #                        'adaptive'      : self.adaptive,
-        #                        'batch_size'    : self.batch_size,
-        #                        'wavelength'    : self._wavelength, 
-        #                        }
-                
+               
         self._params_datamodule = {
-                                #'Nxp'           : self.Nxp, 
-                                #'Nyp'           : self.Nyp, 
+                                'Nxp'           : self.Nxp, 
+                                'Nyp'           : self.Nyp, 
                                 'which'         : self._which,
                                 'source_wl'     : self._source_wl,
                                 'n_cpus'        : self.n_cpus,
@@ -291,26 +247,6 @@ class ParameterManager():
                             'num_epochs'        : self.num_epochs, 
                             'valid_rate'        : self.valid_rate,
                             'accelerator'       : self.accelerator, 
-                            }
-
-        self._params_meep = {
-                            'Nx_metaAtom'           : self.Nx_metaAtom,
-                            'Ny_metaAtom'           : self.Ny_metaAtom,
-                            'Lx_metaAtom'           : self.Lx_metaAtom,
-                            'Ly_metaAtom'           : self.Ly_metaAtom,
-
-                            'n_fusedSilica'         : self.n_fusedSilica,
-                            'n_PDMS'                : self.n_PDMS,
-                            'n_amorphousSilica'     : self.n_amorphousSilica,
-
-                            'h_pillar'              : self.h_pillar,
-                            'thickness_pml'         : self.thickness_pml,
-                            'thickness_fusedSilica' : self.thickness_fusedSilica,
-                            'thickness_PDMS'        : self.thickness_PDMS,
-
-                            'data_shape'            : self.data_shape,
-                            'model_id'              : self.model_id,
-                            'prev_model_id'         : self.prev_model_id,
                             }
 
         self._all_paths = {
@@ -328,15 +264,13 @@ class ParameterManager():
                         }
 
         # now, datagen paths:        
-        self._material_params = {
+        self._geometry_params = {
                             'n_fusedSilica'         : self.n_fusedSilica,
                             'n_PDMS'                : self.n_PDMS,
                             'n_amorphousSi'         : self.n_amorphousSi,
                             'pml_thickness'         : self.pml_thickness,
                             'height_pillar'         : self.height_pillar,
                             'radius'                : self._radius,
-                            'rad_min'               : self.rad_min,
-                            'rad_max'               : self.rad_max,
                             'width_PDMS'            : self.width_PDMS,
                             'width_fusedSilica'     : self.width_fusedSilica,
                             'center_PDMS'           : self.center_PDMS, 
@@ -353,64 +287,42 @@ class ParameterManager():
 
         self._source_params = {
 
-                            #'lambda_min'            : self.lambda_min,
-                            #'lambda_max'            : self.lambda_max,
-                            #'f_min'                 : self.f_min,
-                            #'f_max'                 : self.f_max,
-                            'wavelength_1550'       : self.wavelength_1550,
                             'fcen'                  : self.fcen,
                             'fwidth'                : self.fwidth,
-                            'k_point'               : self.k_point,
                             'center_source'         : self.center_source, 
                             'source_cmpt'           : self.source_cmpt,   
                             'source_type'           : self._source_type,
                             'cell_x'                : self.cell_x,
                             'cell_y'                : self.cell_y,
                             'cell_z'                : self.cell_z,
-                            'cell_size'             : self.cell_size,
-                            'fr_center'             : self.fr_center,
                             'decay_rate'            : self._decay_rate,
-                            'freq_list'             : self.freq_list
-                            #'source'                : self._source,
-                            
+                            'source'                : self._source,
 
                             }
 
         self._sim_params = { 
 
                             'resolution'            : self.resolution,
-                            'lattice_size'          : self.lattice_size,
-                            
                             'cell_x'                : self.cell_x,
                             'cell_y'                : self.cell_y,
                             'cell_z'                : self.cell_z,
                             'cell_size'             : self.cell_size,
-                            
                             'pml_layers'            : self.pml_layers,
                             'k_point'               : self.k_point,
-                            'symmetries'            : self._symmetries,
                             'geometry'              : self._geometry,
+                            'dt'                    : self.dt,
+                            'source_cmpt'           : self.source_cmpt,
+                            'mon_center'            : self.mon_center,
+                            'decay_rate'            : self.decay_rate,
+
                             }
 
-        self._flux_params = {
-                            
-                            'freq_1550'             : self.freq_1550,
-                            'freq_1060'             : self.freq_1060,
-                            'freq_1300'             : self.freq_1300,
-                            'freq_1650'             : self.freq_1650,
-                            'freq_2881'             : self.freq_2881,
-                            'fcen'                  : self.fcen,                         
-                            'nfreq'                 : self.nfreq,
-                            'df'                    : self.df,
+        self._dft_params = {
+                                      
                             'freq_list'             : self.freq_list,
-                            'fr_center'             : self.fr_center,
-                            'fr'                    : self._fr,
-                            #'flux_object'           : self._flux_object,
-                            'center_source'         : self.center_source,
-                            'cell_x'                : self.cell_x,
-                            'cell_y'                : self.cell_y,
-                            'near_pt'               : self.near_pt,
-                            'near_vol'              : self.near_vol, 
+                            'near_vol'              : self.near_vol,
+                            'cs'                    : self.cs, 
+
                             }
 
         self._animation_params = {
@@ -420,7 +332,7 @@ class ParameterManager():
                             'plot_plane'            : self.plot_plane,
                             'source_cmpt'           : self.source_cmpt,
                             'source_type'           : self._source_type,
-                            'fr_center'             : self.fr_center,
+                            'mon_center'            : self.mon_center,
                             'decay_rate'            : self._decay_rate,
                             'fps'                   : self.fps,
                             
@@ -429,17 +341,16 @@ class ParameterManager():
         self._all_params =  {
                             # datagen params:
                             'resim'                 : self._resim,
-                            'material_params'       : self._material_params,
+                            'geometry_params'       : self._geometry_params,
                             'source_params'         : self._source_params,
                             'sim_params'            : self._sim_params,
-                            'flux_params'           : self._flux_params,
+                            'dft_params'            : self._dft_params,
                             'animation_params'      : self._animation_params,
                             # ml params:
                             'model_params'          : self._params_model,
-                            #'propagator_params'     : self._params_propagator,
                             'datamodule_params'     : self._params_datamodule,
-                            'meep_params'           : self._params_meep,
                             'all_paths'             : self._all_paths
+
                             }                   
     
     @property
@@ -455,12 +366,6 @@ class ParameterManager():
     @property 
     def params_model(self):         
         return self._params_model
-
-
-    #@property
-    #def params_propagator(self):
-    #    return self._params_propagator                         
-
 
     @property
     def params_datamodule(self):
@@ -544,20 +449,7 @@ class ParameterManager():
         self._mcl_params = value
         self.collect_params()
  
-
-
-
-
     # datagen getters/setters
-    @property
-    def fr(self):
-        return self._source_type
-            
-    @fr.setter
-    def fr(self, value):
-        logging.debug("Parameter Manager | setting fr (flux region) to {}".format(value))
-        self._fr = value
-        self.calculate_dependencies()
  
     @property
     def source_type(self):

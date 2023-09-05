@@ -1,4 +1,4 @@
-resim : 
+resim : 0 
 
 #--------------------------------
 #       General Params - ML
@@ -126,7 +126,7 @@ wavelength_1550 : 1.55
 wavelength_1300 : 1.30
 wavelength_1060 : 1.06
 wavelength_1650 : 1.65
-wavelength_2881 : 
+wavelength_2881 : 2.881 
 fcen :
 freq_1550 :
 freq_1300 :
@@ -143,6 +143,7 @@ cell_x :
 cell_y :
 cell_z :
 decay_rate : 0.0001
+dt : 50
 
 #------------------------
 #   Simulation Parameters
@@ -164,18 +165,17 @@ pml_layers :
 symmetries :
 
 #------------------------
-#   Flux Object Params
+#   DFT Object Params
 #------------------------
 
 freq :
 nfreq : 1 
 freq_list :
 df : 0 
-fr_center :
-fr :
-#flux_object :
+mon_center :
 near_pt :
 near_vol :
+cs :
 
 #-----------------------
 #  Animation Params

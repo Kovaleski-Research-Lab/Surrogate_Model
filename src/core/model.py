@@ -16,13 +16,13 @@ import torch.nn as nn
 #--------------------------------
 # Import: Custom Python Libraries
 #--------------------------------
+
 sys.path.append("../")
 
 from utils import parameter_manager
 from core import curvature
 from pytorch_lightning import LightningModule
 from core import conv_upsample
-
 
 class SurrogateModel(LightningModule):
     def __init__(self, params_model):
@@ -101,30 +101,13 @@ class SurrogateModel(LightningModule):
         self.save_hyperparameters()
 
     def constrain_phase(self, phase): 
-        #phase = torch.exp(1j * phase)
-        #angle = phase.angle()
-        #return angle
     
         return torch.sin(phase) * torch.pi  # first we constrain it by sin which is periodic
                                              # then we mult by pi to scale it
         
-        #phase = phase % (2*torch.pi)
-        #return phase
-        #err_complex = torch.conj(phase) * torch.exp(1j * torch.tensor([torch.pi])).to(self.device)
-        #err_angle = torch.angle(err_complex)
-
-        #wrapped_err_angle = (err_angle + torch.tensor(torch.pi)) % (2 * torch.tensor(torch.pi)) - torch.tensor(torch.pi)
-
-        #wrapped_err_complex = torch.exp(1j * wrapped_err_angle)
-
-        #corrected_phase_complex = phase * wrapped_err_complex
-
-        #corrected_phase = torch.angle(corrected_phase_complex)
-
-        #return corrected_phase
-         
     def calculate_downstream_flux(self, ):  # convert downstream field to downstream flux. then make sure it's less than or equal to the truth source flux)
-        pass        
+
+                
 
     def select_model(self):
         #Model

@@ -20,12 +20,14 @@ if __name__=="__main__":
     
     params = yaml.load(open('../config.yaml'), Loader = yaml.FullLoader).copy()
     pm = parameter_manager.ParameterManager(params=params)
+    pm.resim = 1
+
     path_results = "/develop/results/spie_journal_2023"
 
-    dataset = "train"
-    idx = int(0)
+    dataset = "valid" # need to change this manually
+    idx = int(0) # this too.
 
-    path_resims = os.path.join(path_results, pm.exp_name + '_2', dataset + '_info') 
+    path_resims = os.path.join(path_results, pm.exp_name + '_2', dataset + '_info') # might need to change this too 
     model_results = pickle.load(open(os.path.join(path_resims,'resim.pkl'), 'rb'))
 
     phases = model_results['phase_pred'][idx]
@@ -42,6 +44,6 @@ if __name__=="__main__":
     r7 = float(radii_list[7])
     r8 = float(radii_list[8])
     sys.path.append('/develop/code/surrogate_model/src/3x3_pillar_sims')
-    cmd = f'mpirun -np 2 python3 run_sim.py -r0 {r0} -r1 {r1} -r2 {r2} -r3 {r3} -r4 {r4} -r5 {r5} -r6 {r6} -r7 {r7} -r8 {r8} -resim 1 -index {idx} -exp_name {pm.exp_name} -dataset {dataset}'
+    cmd = f'mpirun -np 2 python3 run_sim.py -r0 {r0} -r1 {r1} -r2 {r2} -r3 {r3} -r4 {r4} -r5 {r5} -r6 {r6} -r7 {r7} -r8 {r8} -index {idx} -dataset {dataset}'
     #cmd = f"mpirun --allow-run-as-root -np 32 python3 run_sim.py -r0 {r0} -r1 {r1} -r2 {r2} -r3 {r3} -r4 {r4} -r5 {r5} -r6 {r6} -r7 {r7} -r8 {r8} -index {i}, -folder_name {folder_name}"
     os.system(cmd)
