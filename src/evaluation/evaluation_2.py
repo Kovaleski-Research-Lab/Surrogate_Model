@@ -671,26 +671,15 @@ def plot_custom_confusion_matrix(amplitude_matrix, phase_matrix, similarity, sav
 ########## resim eval stuff ##########
 
 def get_nf_resim(folder_name, target):
-
-    nf_resim = []
-    for folder in os.listdir(path_resims):
-        if folder_name in folder:
-            if target in folder:
-                resim = pickle.load(open(os.path.join(path_resims,folder),"rb"))
-                nf_resim.append(resim['near_fields']['grating_ey'])
-    return nf_resim
-
-
-def get_ff_resim(nf_resim):
-    params = yaml.load(open('../config.yaml', 'r'), Loader=yaml.FullLoader)
-    pm = parameter_manager.Parameter_Manager(params = params)
     
-    prop = propagator.Propagator(pm.params_propagator)
-
-    nf_resim = np.array(nf_resim)
-    ff_resim = prop(torch.tensor(nf_resim))
-
-    return ff_resim
+    folder = os.path.join(folder_name, target + "_info")
+    nf_resim = []
+    # for folder in os.listdir(path_resims):
+    #     if folder_name in folder:
+    #         if target in folder:
+    #             resim = pickle.load(open(os.path.join(path_resims,folder),"rb"))
+    #             nf_resim.append(resim['near_fields']['grating_ey'])
+    return nf_resim
 
 def plot_dft_fields(truth, recon, resim, target, batch=True, idx=None, savefig=False):
 
