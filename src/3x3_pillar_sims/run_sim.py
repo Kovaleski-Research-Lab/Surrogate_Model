@@ -27,13 +27,10 @@ def dump_geometry_image(model, pm):
     plt.savefig("geometry.png")
 
 def dump_data(neighbor_index, data, pm): # this is called when we're generating data
-    print("in dump_data()")     
     folder_path_sims = pm.path_dataset
-    print(f"created folder_path_sims: {folder_path_sims}")
     sim_name = "%s.pkl" % (str(neighbor_index).zfill(6))
-    print(f"created sim_name: {sim_name}")
     filename_sim = os.path.join(folder_path_sims, sim_name)
-    print(f"about to dump data to {filename_sim}")
+    print(f"dumping data to {filename_sim}")
     with open(filename_sim, "wb") as f:
         pickle.dump(data,f)
    
@@ -45,7 +42,6 @@ def dump_data(neighbor_index, data, pm): # this is called when we're generating 
 
 def run(radii_list, index, pm, dataset=None):
     a = pm.lattice_size
-    print(a) 
     # Initialize model #
     model = _3x3Pillars._3x3PillarSim()
     
@@ -110,7 +106,6 @@ def run(radii_list, index, pm, dataset=None):
     data["sim_time"] = elapsed_time
     data["radii"] = radii_list
     
-    print(f"data dictionary complete. pm.resim = {pm.resim}")
     if(pm.resim == 0):
         dump_data(index, data, pm) 
     else:
@@ -138,11 +133,9 @@ if __name__=="__main__":
     idx = args.index
     path_out_sims = args.path_out_sims
     pm.path_dataset = path_out_sims
-    print(f"path out sims: {pm.path_dataset}, {args.path_out_sims}")
     if(pm.resim == 0): # we are generating data.
         neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
         radii_list = neighbors_library[idx]
-        print("about to run the sim now")
         run(radii_list, idx, pm)
          
     else:

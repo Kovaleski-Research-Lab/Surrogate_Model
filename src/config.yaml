@@ -149,8 +149,8 @@ dt : 50
 #   Simulation Parameters
 #-------------------------
 
-#resolution : 80
-resolution : 10
+resolution : 80
+#resolution : 10
 lattice_size : 0.680
 grid_size : 3 
 
