@@ -13,6 +13,7 @@ path_simulations: /develop/results
 path_logs: /develop/results/current_logs
 path_sim_job_files: /develop/data/spie_journal_2023/kube_logs
 path_out_sims: /develop/results
+
 # Define Computing Environment
 # - num_mem_lim: limits of random access memory
 # - num_mem_req: requested random access memory

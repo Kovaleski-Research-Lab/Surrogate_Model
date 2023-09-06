@@ -135,9 +135,10 @@ if __name__=="__main__":
     parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to") # this is empty in our config file. gets set in the kubernetes job file
        
     args = parser.parse_args() 
-    params['path_dataset'] = args.path_out_sims
+    idx = args.index
+    path_out_sims = args.path_out_sims
+    pm.path_dataset = path_out_sims
     print(f"path out sims: {pm.path_dataset}, {args.path_out_sims}")
-    idx = args.index 
     if(pm.resim == 0): # we are generating data.
         neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
         radii_list = neighbors_library[idx]
