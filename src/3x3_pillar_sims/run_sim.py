@@ -27,12 +27,12 @@ def dump_geometry_image(model, pm):
     plt.savefig("geometry.png")
 
 def dump_data(neighbor_index, data, pm): # this is called when we're generating data
-     
+    print("in dump_data()")     
     folder_path_sims = pm.path_dataset
 
     sim_name = "%s.pkl" % (str(neighbor_index).zfill(6))
     filename_sim = os.path.join(folder_path_sims, sim_name)
-
+    print(f"about to dump data to {filename_sim}")
     with open(filename_sim, "wb") as f:
         pickle.dump(data,f)
    
@@ -75,9 +75,9 @@ def run(radii_list, index, pm, dataset=None):
     model.run_sim(pm.sim_params)
     elapsed_time = time.time() - start_time
     elapsed_time = round(elapsed_time / 60,2)
-    print("about to call collect_field_info()")
+    
     model.collect_field_info()
-    print("creating data dictionary.") 
+    
     data = {}
 
     data["near_fields_1550"] = {}
@@ -109,14 +109,13 @@ def run(radii_list, index, pm, dataset=None):
     data["sim_time"] = elapsed_time
     data["radii"] = radii_list
     
+    print(f"data dictionary complete. pm.resim = {pm.resim}")
     if(pm.resim == 0):
         dump_data(index, data, pm) 
     else:
-        print("time to dump data")
         eval_name = f"sample_{index}.pkl"
         path_results = "/develop/results/spie_journal_2023"
         path_resim = os.path.join(path_results, pm.exp_name + "_2", dataset + "_info") 
-        print(f"dumping data to {path_resim}")
         filename = os.path.join(path_resim, eval_name)
         with open(filename, "wb") as f:
             pickle.dump(data, f)

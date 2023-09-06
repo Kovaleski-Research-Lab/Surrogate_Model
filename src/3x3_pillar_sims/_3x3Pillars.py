@@ -96,7 +96,7 @@ class _3x3PillarSim():
         self.dft_field_ez_1060 = self.sim.get_dft_array(self.monitor, mp.Ez, 4)
 
         self.eps_data = self.sim.get_epsilon()
-        print("field info collected.")
+    
     def run_sim(self, params):
         print("running sim")
         if params['source_type'] == "gaussian":
