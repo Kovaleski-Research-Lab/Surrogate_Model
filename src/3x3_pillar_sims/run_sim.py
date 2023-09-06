@@ -114,9 +114,11 @@ def run(radii_list, index, pm, dataset=None):
     if(pm.resim == 0):
         dump_data(index, data, pm) 
     else:
+        print("time to dump data")
         eval_name = f"sample_{index}.pkl"
         path_results = "/develop/results/spie_journal_2023"
         path_resim = os.path.join(path_results, pm.exp_name + "_2", dataset + "_info") 
+        print(f"dumping data to {path_resim}")
         filename = os.path.join(path_resim, eval_name)
         with open(filename, "wb") as f:
             pickle.dump(data, f)
