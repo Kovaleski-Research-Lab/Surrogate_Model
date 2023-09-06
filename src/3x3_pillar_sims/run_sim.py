@@ -136,6 +136,7 @@ if __name__=="__main__":
        
     args = parser.parse_args() 
     params['path_dataset'] = args.path_out_sims
+    print(f"path out sims: {pm.path_dataset}, {args.path_out_sims}")
     idx = args.index 
     if(pm.resim == 0): # we are generating data.
         neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
