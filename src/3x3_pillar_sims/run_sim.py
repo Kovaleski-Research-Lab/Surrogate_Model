@@ -29,8 +29,9 @@ def dump_geometry_image(model, pm):
 def dump_data(neighbor_index, data, pm): # this is called when we're generating data
     print("in dump_data()")     
     folder_path_sims = pm.path_dataset
-
+    print(f"created folder_path_sims: {folder_path_sims}")
     sim_name = "%s.pkl" % (str(neighbor_index).zfill(6))
+    print(f"created sim_name: {sim_name}")
     filename_sim = os.path.join(folder_path_sims, sim_name)
     print(f"about to dump data to {filename_sim}")
     with open(filename_sim, "wb") as f:
