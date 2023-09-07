@@ -25,6 +25,8 @@ mcl_params:
     delta: 0   #derivatives
     epsilon: 0    #source flux
 
+i_0: 0.02584613893357307
+
 transfer_learn: False
 load_checkpoint: True
 freeze_encoder: False

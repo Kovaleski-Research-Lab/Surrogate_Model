@@ -16,9 +16,11 @@ from core import curvature
 
 
 def get_Bsplines():
+
     # these discrete  values were generated using a single pillar simulation with souce wavelength 1550 nm. 
     # the simulation was conducted using meep (FDTD) with PML in the z direction and Bloch periodic boundary conditions in x and y.
     # the results rely on the local phase approximation. 
+
     radii = [0.075, 0.0875, 0.1, 0.1125, 0.125, 0.1375, 0.15, 0.1625, 0.175, 0.1875, 0.2, 0.2125, 0.225, 0.2375, 0.25]
     phase_list = [-3.00185845, -2.89738421, -2.7389328, -2.54946247, -2.26906522, -1.89738599, -1.38868364, -0.78489682, -0.05167712, 0.63232107, 1.22268106, 1.6775137, 2.04169308, 2.34964137, 2.67187105]
     radii = np.asarray(radii)
@@ -40,12 +42,12 @@ def phase_to_radii(phases):
     radii = torch.from_numpy(interpolate.splev(phases, to_radii))
     return radii
  
-# convert a value from micron location to pixel location in the cell. hard coded to the flux region
+# convert a value from micron location to pixel location in the cell. hard coded to the monitor
 # center
-def get_fr_slice(data, pm):
+def get_mon_slice(data, pm):
 
     # put value on a (0 to pm.cell_z) scale - meep defines the cell on a (-cell_z/2 to cell_z/2) scale
-    value = pm.fr_center
+    value = pm.mon_center
     value = value + pm.cell_z / 2
 
     # length of the cell in microns 
@@ -62,6 +64,13 @@ def get_fr_slice(data, pm):
     pml_pix = (data['eps_data'].squeeze().shape[2] - data['near_fields_1550']['ex'].squeeze().shape[2]) // 2
 
     return temp - pml_pix
+
+def get_transmission(Ex, Ey, Ez, pm):
+    print(Ex.shape)
+    E_0 = np.sqrt((abs(Ex)**2 + abs(Ey)**2 + abs(Ez)**2))
+    I = 0.5 * E_0**2
+    mean = np.mean(I)
+    return(mean / pm.i_0)
 
 # we retired this function because it relies on a polynomial interpolation which is less accurate and far less reliable at the limit
 # than BSplines.
@@ -91,7 +100,7 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
     
     eps_data = []
     sim_times = []
-    flux_info = []
+    transmissions = []
     radii = []
     phases = []
     der = []
@@ -105,7 +114,7 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
         if kube is True:
             path = "/develop/results/" # KUBE
         else:
-            path = "/develop/data/spie_journal_2023/testing_new_dataset" # LOCAL MARGE
+            path = "/develop/data/spie_journal_2023/kube_dataset" # LOCAL MARGE
         try:
             filepath = os.path.join(path, f)
             print(f"loading in {filepath}...")
@@ -119,19 +128,13 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
         except Exception as e:
             print("Some other error: ", e)
         print("raw data file")
-        embed()
         count += 1
         print(f"count = {count} file = {f}")
 
-        # collect epsilon data, sim time, flux, radii
+        # collect epsilon data, sim time, transmission, radii
         eps_data.append(torch.from_numpy(np.asarray(data['eps_data'])))
         sim_times.append(torch.from_numpy(np.asarray(data['sim_time'])))
 
-        # converting flux data to np.float16 to save space
-        flux = {}
-        flux['source_flux'] = torch.from_numpy(np.asarray(data['flux']['source_flux']))
-        flux['downstream_flux'] = torch.from_numpy(np.asarray(data['flux']['downstream_flux']))
-        flux_info.append(flux)
         radii.append(torch.from_numpy(np.asarray(data['radii'])).unsqueeze(dim=0))
         # convert radii to phase and collect phase
         #temp_phases = torch.from_numpy(radii_to_phase(radii[-1])) i used this to look at an already preprocessed dataset
@@ -151,13 +154,19 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
                     'nf_1650': data['near_fields_1650'],
                     'nf_2881': data['near_fields_2881'],
                   } 
-        fr_slice = get_fr_slice(data, pm)
+        mon_slice = get_mon_slice(data, pm)
+        
+        transmission = get_transmission(nf_dict['nf_1550']['ex'][:,:,mon_slice],
+                                        nf_dict['nf_1550']['ey'][:,:,mon_slice],
+                                        nf_dict['nf_1550']['ez'][:,:,mon_slice], pm)
+        transmissions.append(torch.from_numpy(np.asarray(transmission)))
+
         for key, nf in nf_dict.items(): 
             # nf['ex'], ['ey'], and ['ex'] have shape (x, y, z). Need to get the z slice
-            # corresponding to z = fr_center.
-            nf_ex = nf['ex'][:,:,fr_slice]
-            nf_ey = nf['ey'][:,:,fr_slice]
-            nf_ez = nf['ez'][:,:,fr_slice]
+            # corresponding to z = mon_center.
+            nf_ex = nf['ex'][:,:,mon_slice]
+            nf_ey = nf['ey'][:,:,mon_slice]
+            nf_ez = nf['ez'][:,:,mon_slice] 
             nf_ex = torch.from_numpy(nf_ex).unsqueeze(dim=0)
             nf_ey = torch.from_numpy(nf_ey).unsqueeze(dim=0)
             nf_ez = torch.from_numpy(nf_ez).unsqueeze(dim=0)    
@@ -166,7 +175,7 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
             near_fields_angle = temp.angle().unsqueeze(dim=2)
             wl = ''.join(filter(str.isdigit, key))
             all_near_fields[f'near_fields_{wl}'].append(torch.cat((near_fields_mag, near_fields_angle), dim=2))
-        break
+    
     for key, nf in all_near_fields.items():
         nf = torch.cat(nf, dim=0).float()
     eps_data = torch.cat(eps_data, dim=0).float()
@@ -175,13 +184,13 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
     der = torch.stack(der).float()
 
     data = {'all_near_fields' : all_near_fields,    
-            #'eps_data' : eps_data,
+            'transmissions' : transmissions,
             'radii' : radii, 
             'phases' : phases,
             'derivatives' : der,
             'sim_times' : sim_times,
-            'flux_info' : flux_info,
             }
+
     print("just compiled dictionary")
 
     embed(); exit()
@@ -199,7 +208,7 @@ if __name__=="__main__":
     if kube is True:
         folder = os.listdir('/develop/results') # KUBE
     else:
-        folder = os.listdir('/develop/data/spie_journal_2023/testing_new_dataset')
+        folder = os.listdir('/develop/data/spie_journal_2023/kube_dataset')
 
     raw_data_files = []
     for filename in folder:

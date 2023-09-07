@@ -104,8 +104,12 @@ class SurrogateModel(LightningModule):
     
         return torch.sin(phase) * torch.pi  # first we constrain it by sin which is periodic
                                              # then we mult by pi to scale it
+       
+    def get_mon_slice(): 
+        pass
         
-    def calculate_downstream_flux(self, ):  # convert downstream field to downstream flux. then make sure it's less than or equal to the truth source flux)
+    def calculate_intensity(self, ):  # convert downstream field to downstream flux. then make sure it's less than or equal to the truth source flux)
+        pass
 
                 
 
@@ -195,6 +199,8 @@ class SurrogateModel(LightningModule):
         near_fields, radii, phases, derivatives = batch
 
         near_fields = near_fields[:,1,:,:,:].float().squeeze() # 1=y component
+        print("want to see near_fields.shape")
+        embed()
         radii = radii.squeeze()
         phases = phases.squeeze()
         phases = self.constrain_phase(phases)
@@ -203,7 +209,8 @@ class SurrogateModel(LightningModule):
 
         #pred_near_fields, pred_far_fields, pred_phases, pred_derivatives = predictions
         pred_near_fields, pred_phases, pred_derivatives = predictions
-
+        print("does it match pred_near_fields.shape?")
+        embed();exit()
         #Training: Phase, Curvature, Efield
         
         near_field_loss = self.ae_loss(pred_near_fields.squeeze(), near_fields, choice = 0) # use EMV eventually (can use anything)

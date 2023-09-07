@@ -12,7 +12,7 @@ path_template: kube_files/templates/job.txt
 path_simulations: /develop/results
 path_logs: /develop/results/current_logs
 path_sim_job_files: /develop/data/spie_journal_2023/kube_logs
-path_out_sims: /develop/results
+path_out_sims: /develop/results # this is really a duplicate. can change 'path_simulations' in run_datagen.py (template) if you want to clean this up.
 
 # Define Computing Environment
 # - num_mem_lim: limits of random access memory
@@ -25,7 +25,7 @@ num_mem_lim: 240G
 num_mem_req: 200G
 num_cpus_per_op: 40
 #num_cpus_total: 2048
-num_parallel_ops: 3
+num_parallel_ops: 32
 #num_cpus_total: 160
 
 namespace: gpn-mizzou-muem
@@ -36,4 +36,4 @@ kill_tag: sim
 # Define Simulation
 
 num_sims: 3000 # this is the ending index
-start_group_id: 1489
+start_group_id: 2107

@@ -72,6 +72,7 @@ class ParameterManager():
             self.backbone = params['backbone']
             self.optimizer = params['optimizer']
             self._mcl_params = params['mcl_params']
+            self.i_0 = params['i_0']
             self.num_classes = params['num_classes']
             self.learning_rate = params['learning_rate']
             self.transfer_learn = params['transfer_learn']
@@ -186,6 +187,7 @@ class ParameterManager():
         self.freq_1060 = 1 / self.wavelength_1060
         self.freq_1300 = 1 / self.wavelength_1300
         self.freq_1650 = 1 / self.wavelength_1650
+        self.freq_2881 = 1 / self.wavelength_2881
         self.fcen = 1 / self.wavelength_1550
         self.freq_2881 = self.fcen - (self.freq_1060 - self.fcen)
         self.wavelength_2881 = 1 / self.freq_2881
@@ -225,6 +227,7 @@ class ParameterManager():
                                 'num_classes'           : self.num_classes,
                                 'learning_rate'         : self.learning_rate,
                                 'transfer_learn'        : self.transfer_learn, 
+                                'i_0'                   : self.i_0,
                                 #'path_checkpoint'       : self.path_checkpoint,
                                 'load_checkpoint'       : self.load_checkpoint,
                                 'objective_function'    : self.objective_function,
