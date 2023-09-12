@@ -70,6 +70,14 @@ class _3x3PillarSim():
          
         self.monitor = self.sim.add_dft_fields(params['cs'], params['freq_list'], where=params['near_vol'])
 
+    def reset_field_info(self):
+
+        self.dft_field_ex_2881 = self.dft_field_ey_2881 = self.dft_field_ez_2881 = []
+        self.dft_field_ex_1650 = self.dft_field_ey_1650 = self.dft_field_ez_1650 = []
+        self.dft_field_ex_1550 = self.dft_field_ey_1550 = self.dft_field_ez_1550 = []
+        self.dft_field_ex_1300 = self.dft_field_ey_1300 = self.dft_field_ez_1550 = []
+        self.dft_field_ex_1060 = self.dft_field_ey_1060 = self.dft_field_ez_1060 = []
+
     def collect_field_info(self):
      
         # the third parameter (type=int) takes the index of params['freq_list']

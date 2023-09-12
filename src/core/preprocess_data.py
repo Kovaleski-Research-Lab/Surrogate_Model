@@ -44,7 +44,7 @@ def phase_to_radii(phases):
  
 # convert a value from micron location to pixel location in the cell. hard coded to the monitor
 # center
-def get_mon_slice(data, pm):
+def get_mon_slice(pm, data=None, eps_data=None, nf=None):
 
     # put value on a (0 to pm.cell_z) scale - meep defines the cell on a (-cell_z/2 to cell_z/2) scale
     value = pm.mon_center
@@ -56,12 +56,18 @@ def get_mon_slice(data, pm):
 
     # length of the cell in pixels
     pix_min = 0   
-    pix_max = data['eps_data'].squeeze().shape[2]
+    if data is not None:
+        pix_max = data['eps_data'].squeeze().shape[2]
+    else:
+        pix_max = eps_data.squeeze().shape[2]
 
     #pix_max = data['near_fields_1550']['ex'].squeeze().shape[2]
     temp = int(((value - cell_min) / (cell_max - cell_min)) * (pix_max - pix_min) + pix_min)
 
-    pml_pix = (data['eps_data'].squeeze().shape[2] - data['near_fields_1550']['ex'].squeeze().shape[2]) // 2
+    if data is not None:
+        pml_pix = (data['eps_data'].squeeze().shape[2] - data['near_fields_1550']['ex'].squeeze().shape[2]) // 2
+    else:
+        pml_pix = (eps_data.squeeze().shape[2] - nf.squeeze().shape[2]) // 2
 
     return temp - pml_pix
 
@@ -154,7 +160,7 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
                     'nf_1650': data['near_fields_1650'],
                     'nf_2881': data['near_fields_2881'],
                   } 
-        mon_slice = get_mon_slice(data, pm)
+        mon_slice = get_mon_slice(pm, data)
         
         transmission = get_transmission(nf_dict['nf_1550']['ex'][:,:,mon_slice],
                                         nf_dict['nf_1550']['ey'][:,:,mon_slice],
