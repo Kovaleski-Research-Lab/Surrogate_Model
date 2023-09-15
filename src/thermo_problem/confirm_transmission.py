@@ -25,15 +25,17 @@ def get_intensity(Ex, Ey, Ez):
     I = 0.5 * E_0**2
     return(np.mean(I))
 
-def get_initial_xyz(initial_dft, mon_slice):
-    initial_x = initial_dft[0]
-    initial_y = initial_dft[1]
-    initial_z = initial_dft[2]
-    
-    initial_x = initial_x[:,:,mon_slice]
-    initial_y = initial_y[:,:,mon_slice]
-    initial_z = initial_z[:,:,mon_slice]
-    return initial_x, initial_y, initial_z
+def get_xyz(dft, mon_slice): # takes in dft fields (xdim, ydim, zdim) and returns a z slice (xdim, ydim) at the monitor location for the x, y, and z components of the dft field
+    # separate x, y, z components of the field
+    temp_x = dft[0]
+    temp_y = dft[1]
+    temp_z = dft[2]
+
+    # get the slice for each component
+    x = temp_x[:,:,mon_slice]
+    y = temp_y[:,:,mon_slice]
+    z = temp_z[:,:,mon_slice]
+    return x, y, z
 
 if __name__=='__main__':
     params = yaml.load(open('../../src/config.yaml'), Loader = yaml.FullLoader).copy()
@@ -158,12 +160,12 @@ if __name__=='__main__':
             
             mon_slice = pp.get_mon_slice(pm, eps_data=eps_data, nf=nf) # need to give this eps_data (after populating pillars) and nf should be an x, y, or z component of raw dft fields. 
 
-            x0_2881,y0_2881,z0_2881 = get_initial_xyz(initial_dft_2881, mon_slice)
-            x0_1650,y0_1650,z0_1650 = get_initial_xyz(initial_dft_1650, mon_slice)
-            x0_1550,y0_1550,z0_1550 = get_initial_xyz(initial_dft_1550, mon_slice)
-            x0_1300,y0_1300,z0_1300 = get_initial_xyz(initial_dft_1300, mon_slice)
-            x0_1060,y0_1060,z0_1060 = get_initial_xyz(initial_dft_1060, mon_slice)
-             
+            x0_2881,y0_2881,z0_2881 = get_xyz(initial_dft_2881, mon_slice)
+            x0_1650,y0_1650,z0_1650 = get_xyz(initial_dft_1650, mon_slice)
+            x0_1550,y0_1550,z0_1550 = get_xyz(initial_dft_1550, mon_slice)
+            x0_1300,y0_1300,z0_1300 = get_xyz(initial_dft_1300, mon_slice)
+            x0_1060,y0_1060,z0_1060 = get_xyz(initial_dft_1060, mon_slice)
+            embed();exit() 
             initial_I_2881 = get_intensity(x0_2881, y0_2881, z0_2881)
             initial_I_1650 = get_intensity(x0_1650, y0_1650, z0_1650)
             initial_I_1550 = get_intensity(x0_1550, y0_1550, z0_1550)
@@ -176,27 +178,27 @@ if __name__=='__main__':
 
         # we're dumping as we go in case the program quits due to intensive memory usage
         dfts = [model.dft_field_ex_2881, model.dft_field_ey_2881, model.dft_field_ez_2881]
-        x,y,z = get_initial_xyz(dfts, mon_slice)
+        x,y,z = get_xyz(dfts, mon_slice)
         I_final2881.append(get_intensity(x,y,z))
         trans2881.append(get_intensity(x,y,z) / initial_I_2881)
         
         dfts = [model.dft_field_ex_1650, model.dft_field_ey_1650, model.dft_field_ez_1650]
-        x,y,z = get_initial_xyz(dfts, mon_slice)
+        x,y,z = get_xyz(dfts, mon_slice)
         I_final1650.append(get_intensity(x,y,z))
         trans1650.append(get_intensity(x,y,z) / initial_I_1650)
 
         dfts = [model.dft_field_ex_1550, model.dft_field_ey_1550, model.dft_field_ez_1550]
-        x,y,z = get_initial_xyz(dfts, mon_slice)
+        x,y,z = get_xyz(dfts, mon_slice)
         I_final1550.append(get_intensity(x,y,z))
         trans1550.append(get_intensity(x,y,z) / initial_I_1550)
 
         dfts = [model.dft_field_ex_1300, model.dft_field_ey_1300, model.dft_field_ez_1300]
-        x,y,z = get_initial_xyz(dfts, mon_slice)
+        x,y,z = get_xyz(dfts, mon_slice)
         I_final1300.append(get_intensity(x,y,z))
         trans1300.append(get_intensity(x,y,z) / initial_I_1550)
 
         dfts = [model.dft_field_ex_1060, model.dft_field_ey_1060, model.dft_field_ez_1060]
-        x,y,z = get_initial_xyz(dfts, mon_slice)
+        x,y,z = get_xyz(dfts, mon_slice)
         I_final1060.append(get_intensity(x,y,z))
         trans1060.append(get_intensity(x,y,z) / initial_I_1060)
         

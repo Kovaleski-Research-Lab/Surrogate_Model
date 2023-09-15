@@ -72,13 +72,15 @@ class ParameterManager():
             self.backbone = params['backbone']
             self.optimizer = params['optimizer']
             self._mcl_params = params['mcl_params']
-            self.i_0 = params['i_0']
+            self.initial_intensities = params['initial_intensities']
             self.num_classes = params['num_classes']
             self.learning_rate = params['learning_rate']
             self.transfer_learn = params['transfer_learn']
             self.freeze_encoder = params['freeze_encoder']
             self.load_checkpoint = params['load_checkpoint']
             self.objective_function = params['objective_function']
+
+            self.initial_intensities = params['initial_intensities']
 
             # Load: Datamodule Params
             self._which = params['which']
@@ -116,16 +118,19 @@ class ParameterManager():
             self._x_dim = params['x_dim']
             self._y_dim = params['y_dim']
             self._geometry = params['geometry']
-            
-            self.wavelength_1550 = params['wavelength_1550']
-            self.wavelength_1060 = params['wavelength_1060']
-            self.wavelength_1300 = params['wavelength_1300']
-            self.wavelength_1650 = params['wavelength_1650']
-            self.wavelength_2881 = params['wavelength_2881']
-            self.freq_1550 = params['freq_1550']
-            self.freq_1060 = params['freq_1060']
-            self.freq_1650 = params['freq_1650']
-            self.freq_2881 = params['freq_2881']
+           
+            self.wavelengths = params['wavelengths'] 
+            self.cen_wavelength = params['cen_wavelength']
+            #self.wavelength_1550 = params['wavelength_1550']
+            #self.wavelength_1060 = params['wavelength_1060']
+            #self.wavelength_1300 = params['wavelength_1300']
+            #self.wavelength_1650 = params['wavelength_1650']
+            #self.wavelength_2881 = params['wavelength_2881']
+            #self.freq_1550 = params['freq_1550']
+            #self.freq_1060 = params['freq_1060']
+            #self.freq_1650 = params['freq_1650']
+            #self.freq_2881 = params['freq_2881']
+            #self.freq_1300 = params['freq_1300']
             self.fcen = params['fcen']
             self.fwidth = params['fwidth']
 
@@ -151,7 +156,8 @@ class ParameterManager():
             self.Nyp = params['Nyp']
     
              # Datashape from the sim information
-            self.data_shape = [1,2,self.Nxp,self.Nyp]
+
+            self._data_shape = params['data_shape'] 
 
             self.nfreq = params['nfreq']
             self.df = params['df']
@@ -183,14 +189,14 @@ class ParameterManager():
         self.z_PDMS = self.height_pillar + self.width_PDMS + self.pml_thickness
         self.non_pml = self.cell_z - (2 * self.pml_thickness)
  
-        self.freq_1550 = 1 / self.wavelength_1550
-        self.freq_1060 = 1 / self.wavelength_1060
-        self.freq_1300 = 1 / self.wavelength_1300
-        self.freq_1650 = 1 / self.wavelength_1650
-        self.freq_2881 = 1 / self.wavelength_2881
-        self.fcen = 1 / self.wavelength_1550
-        self.freq_2881 = self.fcen - (self.freq_1060 - self.fcen)
-        self.wavelength_2881 = 1 / self.freq_2881
+        #self.freq_1550 = 1 / self.wavelength_1550
+        #self.freq_1060 = 1 / self.wavelength_1060
+        #self.freq_1300 = 1 / self.wavelength_1300
+        #self.freq_1650 = 1 / self.wavelength_1650
+        #self.freq_2881 = 1 / self.wavelength_2881
+        self.fcen = 1 / self.cen_wavelength
+        #self.freq_2881 = self.fcen - (self.freq_1060 - self.fcen)
+        #self.wavelength_2881 = 1 / self.freq_2881
         self.fwidth = 1.2 * self.fcen
 
         self.k_point = mp.Vector3(0, 0, 0)
@@ -210,9 +216,11 @@ class ParameterManager():
         self.near_pt = mp.Vector3(0, 0, self.mon_center)
         self.near_vol = mp.Volume(center = mp.Vector3(0,0,0),
                                 size = mp.Vector3(self.cell_x, self.cell_y, self.non_pml))
-        self.freq_list = [self.freq_2881, self.freq_1650, self.freq_1550, self.freq_1300, self.freq_1060]
+       
+        self.freq_list = [ 1 / wl for wl in self.wavelengths]  
+        #self.freq_list = [self.freq_2881, self.freq_1650, self.freq_1550, self.freq_1300, self.freq_1060]
         self.cs = [mp.Ex, mp.Ey, mp.Ez]
-      
+        self._data_shape = [1, 6, self.Nxp, self.Nyp]
         self.collect_params()    
 
     def collect_params(self):
@@ -223,16 +231,17 @@ class ParameterManager():
                                 'weights'               : self.weights,
                                 'backbone'              : self.backbone,
                                 'optimizer'             : self.optimizer,
-                                'data_shape'            : self.data_shape,
+                                'data_shape'            : self._data_shape,
                                 'num_classes'           : self.num_classes,
                                 'learning_rate'         : self.learning_rate,
                                 'transfer_learn'        : self.transfer_learn, 
-                                'i_0'                   : self.i_0,
                                 #'path_checkpoint'       : self.path_checkpoint,
                                 'load_checkpoint'       : self.load_checkpoint,
                                 'objective_function'    : self.objective_function,
                                 'mcl_params'            : self._mcl_params,
+                                'initial_intensities'   : self.initial_intensities,
                                 'freeze_encoder'        : self.freeze_encoder,
+                                'freq_list'             : self.freq_list,
                                 }
                
         self._params_datamodule = {
@@ -392,25 +401,25 @@ class ParameterManager():
         self._distance = value
         self.collect_params()
         
-    @property
-    def wavelength(self):
-        return self._wavelength
-    
-    @wavelength.setter
-    def wavelength(self, value):
-        logging.debug("Parameter_Manager | setting wavelength to {}".format(value))
-        self._wavelength = value
-        self.collect_params()
-    
     #@property
-    #def path_checkpoint(self):
-    #    return self._path_checkpoint
-
-    #@path_checkpoint.setter
-    #def path_checkpoint(self, value):
-    #    logging.debug("Parameter_Manager | setting path_checkpoint to {}".format(value))
-    #    self._path_checkpoint = value
+    #def cen_wavelength(self):
+    #    return self._cen_wavelength
+    
+    #@cen_wavelength.setter
+    #def cen_wavelength(self, value):
+    #    logging.debug("Parameter_Manager | setting center wavelength to {}".format(value))
+    #    self._cen_wavelength = value
     #    self.collect_params()
+    
+    @property
+    def data_shape(self):
+        return self._data_shape
+
+    @data_shape.setter
+    def data_shape(self, value):
+        logging.debug("Parameter_Manager | setting path_checkpoint to {}".format(value))
+        self._data_shape = value
+        self.collect_params()
 
     @property
     def which(self):

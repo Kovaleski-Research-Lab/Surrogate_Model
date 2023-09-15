@@ -17,11 +17,24 @@ from torch.utils.data import Dataset, DataLoader, random_split
 #--------------------------------
 sys.path.append('../')
 from core import custom_transforms as ct
-from core import preprocess_data
 
-#--------------------------------
-# Initialize: MNIST Wavefront
-#--------------------------------
+def get_intensities(nf):
+    list = []
+    mag = nf[:,:,0,:,:]
+    angle = nf[:,:,1,:,:]
+    for m, a in zip(mag, angle):
+
+        complex_field = m * torch.exp(1j * a) # shape = 3,166,166
+        components = torch.split(complex_field, 1, dim=0)
+        x_comp, y_comp, z_comp = components
+        x_comp, y_comp, z_comp = [tensor.squeeze(0) for tensor in (x_comp, y_comp, z_comp)]
+        
+        E_0 = torch.sqrt((abs(x_comp)**2 + abs(y_comp)**2 + abs(z_comp)**2))
+        I = 0.5 * E_0**2
+        list.append(torch.mean(I))
+    return list
+
+
 class CAI_Datamodule(LightningDataModule):
     def __init__(self, params, transform = None):
         super().__init__() 
@@ -53,7 +66,7 @@ class CAI_Datamodule(LightningDataModule):
 
     def setup(self, stage: Optional[str] = None):
         #TODO
-        train_file = 'pp_dataset.pt'
+        train_file = 'dev.pt'
         valid_file = None
         test_file = None
         if stage == "fit" or stage is None:
@@ -89,46 +102,83 @@ class customDataset(Dataset):
         logging.debug("customDataset | Setting transform to {}".format(self.transform))
 
         self.all_near_fields = data['all_near_fields']
-        if params['source_wl'] == 1550:
-            temp_near_fields = self.all_near_fields['near_fields_1550']
-        elif params['source_wl'] == 1060:
-            temp_near_fields = self.all_near_fields['near_fields_1060']
-        elif params['source_wl'] == 1300:
-            temp_near_fields = self.all_near_fields['near_fields_1300']
-        elif params['source_wl'] == 1650:
-            temp_near_fields = self.all_near_fields['near_fields_1650']
-        elif params['source_wl'] == 2881:
-            temp_near_fields = self.all_near_fields['near_fields_2881']
-        temp_near_fields = torch.stack(temp_near_fields, dim=0)
-        self.near_fields = temp_near_fields.squeeze(1)
+        #if params['source_wl'] == 1550:
+        #    temp_near_fields = self.all_near_fields['near_fields_1550']
+        #elif params['source_wl'] == 1060:
+        #    temp_near_fields = self.all_near_fields['near_fields_1060']
+        #elif params['source_wl'] == 1300:
+        #    temp_near_fields = self.all_near_fields['near_fields_1300']
+        #elif params['source_wl'] == 1650:
+        #    temp_near_fields = self.all_near_fields['near_fields_1650']
+        #elif params['source_wl'] == 2881:
+        #    temp_near_fields = self.all_near_fields['near_fields_2881']
+        
+        temp_nf_2881 = self.all_near_fields['near_fields_2881']
+        temp_nf_1650 = self.all_near_fields['near_fields_1650']
+        temp_nf_1550 = self.all_near_fields['near_fields_1550']
+        temp_nf_1300 = self.all_near_fields['near_fields_1300']
+        temp_nf_1060 = self.all_near_fields['near_fields_1060']
 
+        temp_nf_2881, temp_nf_1650, temp_nf_1550, temp_nf_1300, temp_nf_1060 = (
+                                            torch.stack(temp_nf_2881, dim=0),
+                                            torch.stack(temp_nf_1650, dim=0),
+                                            torch.stack(temp_nf_1550, dim=0),
+                                            torch.stack(temp_nf_1300, dim=0),
+                                            torch.stack(temp_nf_1060, dim=0))
+
+        self.nf_2881, self.nf_1650, self.nf_1550, self.nf_1300, self.nf_1060 = (
+                                            temp_nf_2881.squeeze(1),
+                                            temp_nf_1650.squeeze(1),
+                                            temp_nf_1550.squeeze(1),
+                                            temp_nf_1300.squeeze(1),
+                                            temp_nf_1060.squeeze(1))
+        # i have near fields with shape [num_samples, 3, 2, xdim, ydim]
+        #                               x, y, z components, magnitude and angle 
+        self.intensities_2881 = get_intensities(self.nf_2881)
+        self.intensities_1650 = get_intensities(self.nf_1650)
+        self.intensities_1550 = get_intensities(self.nf_1550)
+        self.intensities_1300 = get_intensities(self.nf_1300)
+        self.intensities_1060 = get_intensities(self.nf_1060)
+     
         self.radii = data['radii']
         self.phases = data['phases']
         self.derivatives = data['derivatives']
-
-        self.temp_flux_info = data['flux_info']
-        self.flux_info = {'source_flux' : [], 'downstream_flux' : []}
-
-        for item in self.temp_flux_info:
-            self.flux_info['source_flux'].append(item['source_flux'])   # these values are ~ [0.14, 0.3]
-            self.flux_info['downstream_flux'].append(item['downstream_flux']) # these values are in the same range as source_flux
+        
         #self.transform = ct.per_sample_normalize()
         self.transform = None
 
     def __len__(self):
-        return len(self.near_fields)
+        return len(self.nf_1550)
 
     def __getitem__(self, idx):
+
         if self.transform:   
-            #return self.transform(self.near_fields[idx]), self.transform(self.far_fields[idx]), self.radii[idx].float(), self.phases[idx].float(), self.derivatives[idx].float()
-            return (self.transform(self.near_fields[idx]), self.radii[idx].float(),
-                        self.phases[idx].float(), self.derivatives[idx].float())
-                        #self.flux_info['source_flux'][idx].float())
-        else:   
-            #return self.near_fields[idx], self.far_fields[idx], self.radii[idx].float(), self.phases[idx].float(), self.derivatives[idx].float()
-            return (self.near_fields[idx], self.radii[idx].float(), self.phases[idx].float(),
-                     self.derivatives[idx].float())
-                    # self.flux_info['source_flux'][idx].float())
+            pass
+            #return (self.transform(self.nf_2881[idx], self.nf_1650[idx], self.nf_1550[idx],
+            #            self.nf_1650[idx], self.nf_1300[idx], self.nf_1060[idx],
+            #            self.radii[idx].float(),self.phases[idx].float(),
+            #            self.derivatives[idx].float(), self.intensities[idx].float()))
+        else:
+            batch = {
+                    'nf_2881'             : self.nf_2881[idx],
+                    'nf_1650'             : self.nf_1650[idx],
+                    'nf_1550'             : self.nf_1550[idx],
+                    'nf_1300'             : self.nf_1300[idx],
+                    'nf_1060'             : self.nf_1060[idx],
+                    'radii'               : self.radii[idx].float(),
+                    'phases'              : self.phases[idx].float(),
+                    'derivatives'         : self.derivatives[idx].float(),
+                    'intensities_2881'    : self.intensities_2881[idx].float(),
+                    'intensities_1650'    : self.intensities_1650[idx].float(),
+                    'intensities_1550'    : self.intensities_1550[idx].float(),
+                    'intensities_1300'    : self.intensities_1300[idx].float(),
+                    'intensities_1060'    : self.intensities_1060[idx].float(),
+                    }
+            return batch
+
+#            return (self.nf_2881[idx], self.nf_1650[idx], self.nf_1550[idx], self.nf_1300[idx],
+#                        self.nf_1060[idx], self.radii[idx].float(), self.phases[idx].float(),
+#                        self.derivatives[idx].float(), self.intensities[idx].float())
 
 #--------------------------------
 # Initialize: Select dataset
@@ -167,11 +217,12 @@ if __name__=="__main__":
     #Initialize the data module
     dm = select_data(pm.params_datamodule)
     dm.prepare_data()
-    dm.setup(pm, stage="fit")
+    #dm.setup(pm, stage="fit")
+    dm.setup(stage="fit")
 
     #View some of the data
 
-    nf, radii, phase, derivative, source_flux = next(iter(dm.train_dataloader()))
+    batch = next(iter(dm.train_dataloader()))
     from IPython import embed; embed()
 
     #fig,ax = plt.subplots(1,2,figsize=(5,5))

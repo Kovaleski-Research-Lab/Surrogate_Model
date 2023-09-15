@@ -23,7 +23,7 @@ def get_conv(output_size, input_shape):
     return layer
 
 def get_conv_transpose(input_size, in_channels, out_channels, mod_size):
-
+    
     #Initialize the output list
 
     output_size = [0,0]    

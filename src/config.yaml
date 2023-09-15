@@ -21,14 +21,19 @@ num_epochs: 100
 mcl_params:
     alpha: 1     #near-field
     #beta: 1     #far-field
-    gamma: 0    #phase
-    delta: 0   #derivatives
-    epsilon: 0    #source flux
+    gamma: 0     #phase
+    delta: 0     #derivatives
+    epsilon: 0   #intensity
 
-i_0: 0.02584613893357307
+initial_intensities :
+    2881: 2.133954817261386e-05
+    1650: 0.020591382539901358
+    1550: 0.02579922487539837
+    1300: 0.013293813343678174
+    1060: 0.00015713650643846212
 
 transfer_learn: False
-load_checkpoint: True
+load_checkpoint: False # only True when doing reconstruction (loads in a model from disk) 
 freeze_encoder: False
 
 weights: 
@@ -61,26 +66,27 @@ path_dataset:
 #--------------------------------
 
 #Metasurface simulation
-Nx_metaAtom: 3
-Ny_metaAtom: 3
-Lx_metaAtom: 680.e-9
-Ly_metaAtom: 680.e-9
-
-h_pillar: 102.e-9
-thickness_pml: 780.e-9
-thickness_fusedSilica: 780.e-9
-thickness_PDMS: 1560.e-9
-
-#General
-wavelength: 1550.e-9
-
-#Fourier propagation
-distance: 10.e-6
+#Nx_metaAtom: 3
+#Ny_metaAtom: 3
+#Lx_metaAtom: 680.e-9
+#Ly_metaAtom: 680.e-9
+#
+#h_pillar: 102.e-9
+#thickness_pml: 780.e-9
+#thickness_fusedSilica: 780.e-9
+#thickness_PDMS: 1560.e-9
+#
+##General
+#wavelength: 1550.e-9
+#
+##Fourier propagation
+#distance: 10.e-6
 Nxp: 166 # make this dynamic, put in parameter manager. it's data.shape
 Nyp: 166
-Lxp: 2.04e-6
-Lyp: 2.04e-6
-adaptive: True
+#Lxp: 2.04e-6
+#Lyp: 2.04e-6
+#adaptive: True
+data_shape:
 
 #--------------------------------
 #       Datamodule Params
@@ -124,17 +130,19 @@ geometry :
 #   Source Parameters
 #-----------------------
 
-wavelength_1550 : 1.55
-wavelength_1300 : 1.30
-wavelength_1060 : 1.06
-wavelength_1650 : 1.65
-wavelength_2881 : 2.881 
+wavelengths : [2.881, 1.650, 1.550, 1.300, 1.060]
+cen_wavelength : 1.55
+#wavelength_1550 : 1.55
+#wavelength_1300 : 1.30
+#wavelength_1060 : 1.06
+#wavelength_1650 : 1.65
+#wavelength_2881 : 2.881 
 fcen :
-freq_1550 :
-freq_1300 :
-freq_1060 :
-freq_1650 :
-freq_2881 :
+#freq_1550 :
+#freq_1300 :
+#freq_1060 :
+#freq_1650 :
+#freq_2881 :
 fwidth :
 k_point :
 center_source :
@@ -152,7 +160,7 @@ dt : 50
 #-------------------------
 
 #resolution : 80
-resolution : 50
+resolution : 10
 lattice_size : 0.680
 grid_size : 3 
 

@@ -23,7 +23,6 @@ from utils import parameter_manager
 from core import curvature
 from pytorch_lightning import LightningModule
 from core import conv_upsample
-from core import preprocess_data
 
 class SurrogateModel(LightningModule):
     def __init__(self, params_model):
@@ -67,22 +66,30 @@ class SurrogateModel(LightningModule):
         self.val_phase_truth = []
         self.val_deriv_predictions = []
         self.val_deriv_truth = []
+        self.val_source_flux_predictions = []
+        self.val_source_flux_truth = []
 
         self.train_phase_predictions = []
         self.train_phase_truth = []
         self.train_deriv_predictions = []
         self.train_deriv_truth = []
+        self.train_source_flux_predictions = []
+        self.train_source_flux_truth = []
 
         # for resim -- these get populated at the very end. change this
         self.val_phase_pred_resim = []
         self.val_phase_truth_resim = []
         self.val_nf_pred_resim = []
         self.val_nf_truth_resim = []
+        self.val_source_flux_pred_resim = []
+        self.val_source_flux_truth_resim = []
     
         self.train_phase_pred_resim = []
         self.train_phase_truth_resim = []
         self.train_nf_pred_resim = []
         self.train_nf_truth_resim = []
+        self.train_source_flux_pred_resim = []
+        self.train_source_flux_truth_resim = []
 
         # for recon
         self.val_nf_amp_diff = []
@@ -98,6 +105,14 @@ class SurrogateModel(LightningModule):
         return torch.sin(phase) * torch.pi  # first we constrain it by sin which is periodic
                                              # then we mult by pi to scale it
        
+    def get_mon_slice(): 
+        pass
+        
+    def calculate_intensity(self, ):  # convert downstream field to downstream flux. then make sure it's less than or equal to the truth source flux)
+        pass
+
+                
+
     def select_model(self):
         #Model
         if self.backbone == "resnet18":
@@ -125,13 +140,14 @@ class SurrogateModel(LightningModule):
         # preprocess simulated data. This might just be the definition of feature extraction.
        
         spatial_shape = tuple(self.data_shape[-2:].numpy()) 
+
         self.first = conv_upsample.get_conv_transpose(input_size = spatial_shape,
                                         in_channels = self.data_shape[1], 
                                         out_channels = self.data_shape[1], mod_size = 32)
 
         temp = torch.rand(tuple(self.data_shape.numpy()))
         response = self.first(temp)
-
+        
         self.last = conv_upsample.get_conv(spatial_shape, response.shape)
 
         # - Creating latent space between encoder and decoder of unet architecture
@@ -143,7 +159,7 @@ class SurrogateModel(LightningModule):
         # information about the modes while still fulfilling the aim of inverse design.
 
         num_features = self.encoder(temp)[-1].view(-1).shape[0]    # what are latent space shapes? run encoder with an example input and figure out the number of features. insert an MLP (nn.seq) - take that output and converts it to the shape of the latent space
-        self.encode_phase = torch.nn.Sequential(torch.nn.Linear(num_features*len(self.params['freq_list']), 512),
+        self.encode_phase = torch.nn.Sequential(torch.nn.Linear(num_features, 512),
                                                 torch.nn.ReLU(),
                                                 torch.nn.Linear(512, self.num_phase))  # num_phases sets the size of the latent space
         
@@ -151,7 +167,7 @@ class SurrogateModel(LightningModule):
 
         self.decode_phase = torch.nn.Sequential(torch.nn.Linear(self.num_phase, 512), 
                                                 torch.nn.ReLU(),
-                                                torch.nn.Linear(512, num_features*len(self.params['freq_list'])))
+                                                torch.nn.Linear(512, num_features))
 
         #self.decode_modes... might take phases back up to mode size 
 
@@ -165,6 +181,11 @@ class SurrogateModel(LightningModule):
             for p in self.encode_phase.parameters():   # set all the params in the MLP to false. also turn off learnign for the MLP.
                 p.requires_grad = False
 
+    def get_intensity(Ex, Ey, Ez): # expects Ex.shape = Ey.shape = Ez.shape = (xdim, ydim)
+        E_0 = np.sqrt(abs(Ex)**2 + abs(Ey)**2 + abs(Ez)**2)
+        I = 0.5 * E_0**2 
+        return np.mean(I)
+
     def ae_loss(self, preds, labels, choice): # ae=autoencoder. this chooses what loss func we use (used for other stuff besides ae) we need to add earth mover's distance
         if(choice == 0):
             fn = torch.nn.MSELoss()
@@ -173,22 +194,27 @@ class SurrogateModel(LightningModule):
             fn = PeakSignalNoiseRatio()
             loss = 1 / (1 + fn(preds, labels))
         elif(choice == 2):
-            pass
-            #final_intenisty_truth = 
-            #initial_intensity_truth = params[
-            #loss = torch.abs( torch.abs() - torch.abs() )            
+            loss = torch.abs( torch.abs() - torch.abs() )            
         else:
             pass # make it earth movers distance 
         return loss
      
-    def objective(self, batch, predictions, all_nf, alpha = 1, gamma = 1, delta = 1, epsilon = 1):
-        
-        
+    #def objective(self, batch, predictions, alpha = 1, beta = 1, gamma = 1, delta = 1):
+    def objective(self, batch, predictions, alpha = 1, gamma = 1, delta = 1, epsilon = 1):
+
+        near_fields_x, near_fields_y, near_fields_z, radii, phases, derivatives = batch
+        #near_fields_x, near_fields_y, near_fields_z, radii, phases, derivatives, intensities = batch
+
+        near_fields_x = near_fields[:,0,:,:,:].float().squeeze() # 0=x component
+        near_fields_y = near_fields[:,1,:,:,:].float().squeeze() # 1=y component
+        near_fields_z = near_fields[:,2,:,:,:].float().squeeze() # 2=z component
+
         radii = radii.squeeze()
         phases = phases.squeeze()
         phases = self.constrain_phase(phases)
         derivatives = derivatives.squeeze()
         #intensities = intensities.squeeze()
+        embed();exit()
         pred_near_fields_x, pred_near_fields_y, pred_near_fields_z, pred_phases, pred_derivatives = predictions
         #pred_near_fields_x, pred_near_fields_y, pred_near_fields_z, pred_phases, pred_derivatives, pred_intensities = predictions
 
@@ -205,6 +231,7 @@ class SurrogateModel(LightningModule):
         total_loss = (self.alpha*near_field_loss_x + self.alpha*near_field_loss_y +
                             self.alpha*near_field_loss_z + self.gamma*phase_loss +
                             self.delta*derivative_loss + self.epsilon*thermo_loss)
+        embed(); exit() 
         return {"near_field_loss_x": near_field_loss_x, "near_field_loss_y": near_field_loss_y,
                 "near_field_loss_z": near_field_loss_z,  "total_loss": total_loss, 
                 "phase_loss": phase_loss, "derivative_loss": derivative_loss,
@@ -289,27 +316,19 @@ class SurrogateModel(LightningModule):
             exit()
 
     def forward(self, x): # not exactly the forward pass. depending on if ptlightning called forward from training (grads) or valid (no grads) you ahve grads or not.
+        
         # Encoder: Feature Reduction
-        freqs = torch.split(x, 1, dim=1)
-        freqs = [freq.squeeze() for freq in freqs]
-        shape = freqs[0].shape
+        x = self.first(x)
         
-        new_shape = (shape[0], shape[1] * shape[2], shape[3], shape[-1])
-        freqs = [freq.reshape(new_shape) for freq in freqs]
-        temp = []
-        for freq in freqs:
-            x = self.first(freq.squeeze().float())
-            x = self.encoder(x)
-            temp.append(x)
-        all_last = [f[-1] for f in temp]
-        
+        x = self.encoder(x)
+
         # - Get last layer from Resnet encoder
-        x_shape = all_last[0].size()
-        all_last = [last.view(x_shape[0], -1) for last in all_last]
-        all_last = torch.hstack(all_last)
-        
+        x_last = x[-1]
+        x_shape = x_last.size()
+        x_last = x_last.view(x_shape[0], -1)
+
         # Learning: Phase parameters, derivatives
-        phase = self.encode_phase(all_last)
+        phase = self.encode_phase(x_last)
 
         # Constrain phase
         phase = self.constrain_phase(phase)
@@ -319,8 +338,8 @@ class SurrogateModel(LightningModule):
 
         # Decoder: Feature Reconstruction
         x_last = self.decode_phase(phase) # MLP 
-        
-        x_last = x_last.view(x_shape[0],5,x_shape[1],x_shape[2],x_shape[3]) 
+        x_last = x_last.view(x_shape) 
+
         # - Update last layer from Resnet encoder
         x[-1] = x_last
         x_recon = self.seg_head(self.decoder(*x)) # MLP for final decison - takes output of the decoder and makes "classification" predictions. in our case, we're using it to give us amplitude and phase. we're co-opting a segmentation model to do this.
@@ -331,28 +350,28 @@ class SurrogateModel(LightningModule):
 
     def shared_step(self, batch, batch_idx): # training step, valid step, and testing all call this function. 
 
-        nf_2881 = batch['nf_2881'].unsqueeze(dim=1)
-
-        nf_1650 = batch['nf_1650'].unsqueeze(dim=1)
-
-        nf_1550 = batch['nf_1550'].unsqueeze(dim=1)
-
-        nf_1300 = batch['nf_1300'].unsqueeze(dim=1)
-
-        nf_1060 = batch['nf_1060'].unsqueeze(dim=1)
-        all_nf = torch.cat((nf_2881, nf_1650, nf_1550, nf_1300, nf_1060), dim=1).to(self.device)
- 
-        outputs = self.forward(all_nf)
+        near_fields, radii, phases, derivatives = batch # from the data, derived from radii
         
-        return all_nf, outputs
+        near_fields = near_fields.to(self.device)
+        radii = radii.to(self.device)
+        phases = phases.to(self.device)
+        derivatives = derivatives.to(self.device)
+        #source_flux = source_flux.to(self.device)
+           
+        #Going to just use the y component for now
+        near_fields = near_fields[:,1,:,:,:].float()
+        pred_near_field, pred_phase, pred_derivatives = self.forward(near_fields) # phases are constrained int eh forward pass
+        #pred_source_flux = calculate_downstream_flux()
+        
+        return pred_near_field, pred_phase, pred_derivatives
         #return pred_near_field, pred_phase, pred_derivatives, pred_source_flux
         
     def training_step(self, batch, batch_idx):
         #Get predictions
-        all_nf, predictions = self.shared_step(batch, batch_idx)
+        predictions = self.shared_step(batch, batch_idx)
 
         #Calculate loss
-        loss = self.objective(batch, predictions, all_nf)
+        loss = self.objective(batch, predictions)
         total_loss = loss['total_loss']
         near_field_loss = loss['near_field_loss']
         phase_loss = loss['phase_loss']
@@ -451,14 +470,13 @@ if __name__ == "__main__":
     from core import datamodule
     seed_everything(1337)
     params = yaml.load(open('../config.yaml', 'r'), Loader = yaml.FullLoader)
-    pm = parameter_manager.ParameterManager(params = params)
+    pm = parameter_manager.Parameter_Manager(params = params)
 
     dm = datamodule.select_data(pm.params_datamodule)
     dm.prepare_data()
     dm.setup(stage="fit")
     batch = next(iter(dm.train_dataloader()))
     #model = CAI_Model(pm.params_model, pm.params_propagator)
-    #model = Encoder(pm.params_model)
+    model = Encoder(pm.params_model)
+    #embed()
     
-    model = SurrogateModel()
-    embed() 
