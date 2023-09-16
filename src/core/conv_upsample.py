@@ -19,7 +19,6 @@ def get_conv(output_size, input_shape):
     # Initialize: Convolutional Layer
 
     layer = torch.nn.Conv2d(in_channels, out_channels, kernel_size, stride=1)
-
     return layer
 
 def get_conv_transpose(input_size, in_channels, out_channels, mod_size):

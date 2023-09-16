@@ -59,7 +59,7 @@ def run(params):
     if(pm.gpu_flag and torch.cuda.is_available()):
         logging.debug("Training with GPUs")
         trainer = Trainer(logger = logger, accelerator = "cuda", num_nodes = 1, 
-                          check_val_every_n_epoch = pm.valid_rate, num_sanity_val_steps = 1,
+                          check_val_every_n_epoch = pm.valid_rate, num_sanity_val_steps = 0,
                           devices = pm.gpu_list, max_epochs = pm.num_epochs, 
                           deterministic=True, enable_progress_bar=True, enable_model_summary=True,
                           default_root_dir = pm.path_root, callbacks = [checkpoint_callback]

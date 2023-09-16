@@ -220,7 +220,7 @@ class ParameterManager():
         self.freq_list = [ 1 / wl for wl in self.wavelengths]  
         #self.freq_list = [self.freq_2881, self.freq_1650, self.freq_1550, self.freq_1300, self.freq_1060]
         self.cs = [mp.Ex, mp.Ey, mp.Ez]
-        self._data_shape = [1, 6, self.Nxp, self.Nyp]
+        self._data_shape = [1, 30, self.Nxp, self.Nyp]
         self.collect_params()    
 
     def collect_params(self):
