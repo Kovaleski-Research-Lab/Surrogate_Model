@@ -15,13 +15,13 @@ prev_model_id: 'baseline_1'
 #--------------------------------
 #       Training Params
 #--------------------------------
-batch_size: 8
-num_epochs: 100
+batch_size: 8 
+num_epochs: 10
 
 mcl_params:
-    alpha: 1     #near-field
+    alpha: 0     #near-field
     #beta: 1     #far-field
-    gamma: 0     #phase
+    gamma: 1     #phase
     delta: 0     #derivatives
     epsilon: 0   #intensity
 

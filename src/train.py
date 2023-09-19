@@ -42,7 +42,6 @@ def run(params):
 
     # Initialize: The datamodule
     data = datamodule.select_data(pm.params_datamodule)
-
     # Initialize: The logger
     logger = custom_logger.Logger(all_paths=pm.all_paths, name=pm.model_id, version=0)
 
@@ -59,7 +58,7 @@ def run(params):
     if(pm.gpu_flag and torch.cuda.is_available()):
         logging.debug("Training with GPUs")
         trainer = Trainer(logger = logger, accelerator = "cuda", num_nodes = 1, 
-                          check_val_every_n_epoch = pm.valid_rate, num_sanity_val_steps = 0,
+                          check_val_every_n_epoch = pm.valid_rate, num_sanity_val_steps = 1,
                           devices = pm.gpu_list, max_epochs = pm.num_epochs, 
                           deterministic=True, enable_progress_bar=True, enable_model_summary=True,
                           default_root_dir = pm.path_root, callbacks = [checkpoint_callback]
@@ -76,7 +75,7 @@ def run(params):
    
     trainer.fit(model,data) # this calls train_step() and valid_step()
     
-    trainer.test(model, dataloaders=[data.val_dataloader(),data.train_dataloader()]) # this calls model.test_step. 
+    #trainer.test(model, dataloaders=[data.val_dataloader(),data.train_dataloader()]) # this calls model.test_step. 
 
     # Dump config
     yaml.dump(params, open(os.path.join(pm.path_root, f'{pm.path_results}/params.yaml'),'w'))
@@ -99,4 +98,3 @@ if __name__=="__main__":
     params = yaml.load(open(args.config), Loader = yaml.FullLoader)
 
     run(params)
-    embed()

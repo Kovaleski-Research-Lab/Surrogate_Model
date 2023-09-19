@@ -45,6 +45,7 @@ class SurrogateModel(LightningModule):
         self.gamma = self.mcl_params['gamma'] # phase 
         self.delta = self.mcl_params['delta'] # derivatives
         self.epsilon = self.mcl_params['epsilon'] # source_flux
+        self.initial_intensities = self.params['initial_intensities']
 
         self.num_phase = 9 
 
@@ -95,7 +96,8 @@ class SurrogateModel(LightningModule):
 
     def constrain_phase(self, phase): 
     
-        return torch.sin(phase) * torch.pi  # first we constrain it by sin which is periodic
+        #return (torch.sin(phase) * torch.pi).to(dtype=torch.float64)  # first we constrain it by sin which is periodic
+        return (torch.sin(phase) * torch.pi)  # first we constrain it by sin which is periodic
                                              # then we mult by pi to scale it
        
     def select_model(self):
@@ -165,53 +167,175 @@ class SurrogateModel(LightningModule):
                 p.requires_grad = False
 
     def ae_loss(self, preds, labels, choice): # ae=autoencoder. this chooses what loss func we use (used for other stuff besides ae) we need to add earth mover's distance
+
         if(choice == 0):
             fn = torch.nn.MSELoss()
             loss = fn(preds, labels)
+
         elif(choice == 1):
             fn = PeakSignalNoiseRatio()
             loss = 1 / (1 + fn(preds, labels))
-        elif(choice == 2):
-            pass
-            #final_intenisty_truth = 
-            #initial_intensity_truth = params[
-            #loss = torch.abs( torch.abs() - torch.abs() )            
+
+        elif(choice == 2): # this is thermo loss 
+    
+            # get initial intensities as a list in order: [2881...1060] use these as truth_initial and pred_initial
+            i_initial = list(self.initial_intensities.values())
+            i_initial = torch.tensor(i_initial, requires_grad=True).to(self.device)
+
+            a = []                      # this is the first term of the loss function. a = abs(truth_final - truth_initial)
+            i_final_truth = labels
+            for val in i_final_truth:                   # iterate through each sample of the batch
+                temp = []
+                for i, truth_final in enumerate(val):   # get every frequency and calculate final-initial
+                    temp.append(torch.abs(truth_final - i_initial[i]))
+                a.append(temp)
+
+            b = []                      # this is the second term of the loss function. b = abs(pred_final - pred_initial)
+            i_final_pred = preds
+            for val in i_final_pred:
+                temp = []
+                for i, pred_final in enumerate(val):
+                    temp.append(torch.abs(pred_final - i_initial[i]))
+                b.append(temp)
+            
+            loss = []
+            for (A, B) in zip(a, b): # iterate over the length of a and b (so the batch)
+                #a_i and b_i have length 5 for the loss terms associated with each frequency.
+                temp = [torch.abs(x - y) for x,y in zip(A,B)]
+                loss.append(temp)
+
+            loss = torch.tensor(loss, requires_grad=True).to(self.device)
+            agg_loss = torch.mean(loss, dim=0)  # this gives us a [5] tensor containing avg loss for each freq across the batch
+            thermo_loss = torch.mean(agg_loss) # this aggregates all the frequencies so now we have a single loss term for thermo
+            return thermo_loss
         else:
             pass # make it earth movers distance 
         return loss
-     
+
+    def get_mag_and_angle(self, field, comp_idx): # we use this to calculate near field loss
+
+        comp = field[comp_idx,:,:,:]
+        mag = comp[0,:,:]
+        angle = comp[1,:,:]
+        return mag, angle
+
+    def calculate_intensity(self, x_mag, y_mag, z_mag):
+
+        E_0 = torch.sqrt(torch.abs(x_mag)**2 + torch.abs(y_mag)**2 + torch.abs(z_mag)**2)
+        intensity = 0.5 * E_0**2
+        intensity = intensity.mean()
+        return intensity
+
+    def calculate_thermo_loss(self):
+        pass
+ 
     def objective(self, batch, predictions, all_nf, alpha = 1, gamma = 1, delta = 1, epsilon = 1):
-        
+
+        # We get truth values from the batch: phases, derivatives, intensities, near fields        
         radii = batch['radii'].squeeze()
+
         phases = batch['phases'].squeeze() 
         phases = self.constrain_phase(phases)
-        derivatives = batch['derivatives'].squeeze()
-        embed();exit()
-        #radii = radii.squeeze()
-        #phases = phases.squeeze()
-        #phases = self.constrain_phase(phases)
-        derivatives = derivatives.squeeze()
-        #intensities = intensities.squeeze()
-        pred_near_fields_x, pred_near_fields_y, pred_near_fields_z, pred_phases, pred_derivatives = predictions
-        #pred_near_fields_x, pred_near_fields_y, pred_near_fields_z, pred_phases, pred_derivatives, pred_intensities = predictions
 
+        derivatives = batch['derivatives'].squeeze()
+
+        intensities = [batch['intensities_2881'], batch['intensities_1650'], batch['intensities_1550'], batch['intensities_1300'], batch['intensities_1060']]
+        intensities = [x.squeeze() for x in intensities]
+        intensities = torch.stack(intensities)
+        intensities = intensities.transpose(0,1)
+
+        nf = [batch['nf_2881'], batch['nf_1650'], batch['nf_1550'], batch['nf_1300'], batch['nf_1300']]
+        nf = [x.squeeze() for x in nf]
+        nf = torch.stack(nf)
+        nf = nf.transpose(0, 1).float()
+
+        # We get predictions from the model. We'll have to calculate predicted intensities.
+        pred_nf, pred_phases, pred_derivatives = predictions[0], predictions[1], predictions[2]
+        pred_intensities = []
+
+        for pred in pred_nf: # batch size is 8, so 8 iterations. shape of each pred_recon is [5, 3, 2, xdim, ydim]
+            temp = [] # to hold the intensities of a particular wavelength
+            for i in range(pred.shape[0]):
+                freq = pred[i,:,:,:,:]
+                x_mag = freq[0,0,:,:] # 0: x, 0: mag
+                y_mag = freq[1,0,:,:] # 1: y, 0: mag
+                z_mag = freq[2,0,:,:] # 2: z, 0: mag
+                intensity = self.calculate_intensity(x_mag, y_mag, z_mag)
+                temp.append(intensity)
+            
+            pred_intensities.append(temp) # index 0 holds sample 0, etc.
+
+        pred_intensities = torch.tensor(pred_intensities, requires_grad=True) # matches the shape of intensities.
         # this needs to be every mag and phase of every comp of every freq gets passed through MSE 
                 
-        near_field_loss_x = self.ae_loss(pred_near_fields_x.squeeze(), near_fields_x, choice = 0) # use EMV eventually (can use anything)
-        near_field_loss_y = self.ae_loss(pred_near_fields_y.squeeze(), near_fields_y, choice = 0) 
-        near_field_loss_z = self.ae_loss(pred_near_fields_z.squeeze(), near_fields_z, choice = 0) 
+        # nf.shape and pred_nf.shape is [8, 5, 3, 2, 166, 166] - batch, freq, component, mag/angle, xdim, ydim
+
+        x_loss, y_loss, z_loss = [], [], [] # append these list with shape [2] tensors: magnitude loss followed by angle loss
+        for batch, (truths, preds) in enumerate(zip(nf, pred_nf)): 
+            
+            temp_x, temp_y, temp_z = [], [], []            
+            for (t, p) in zip(truths, preds):
+                # get the truth values
+                x_mag, x_angle = self.get_mag_and_angle(t, 0)
+                y_mag, y_angle = self.get_mag_and_angle(t, 1)
+                z_mag, z_angle = self.get_mag_and_angle(t, 2)
+                
+                # get the preds
+                x_mag_pred, x_angle_pred = self.get_mag_and_angle(p, 0)
+                y_mag_pred, y_angle_pred = self.get_mag_and_angle(p, 1)
+                z_mag_pred, z_angle_pred = self.get_mag_and_angle(p, 2)
+
+                # There's a loss associated with magnitude and angle of each component.
+                x_loss_mag = self.ae_loss(x_mag_pred, x_mag, choice=0)       
+                x_loss_angle = self.ae_loss(x_angle_pred, x_angle, choice=0)
+                temp_x.append(torch.cat((x_loss_mag.view(1), x_loss_angle.view(1)), dim=0))
+    
+                y_loss_mag = self.ae_loss(y_mag_pred, y_mag, choice=0)
+                y_loss_angle = self.ae_loss(y_angle_pred, y_angle, choice=0)
+                temp_y.append(torch.cat((y_loss_mag.view(1), y_loss_angle.view(1)), dim=0))
+                
+                z_loss_mag = self.ae_loss(z_mag_pred, z_mag, choice=0)
+                z_loss_angle = self.ae_loss(z_angle_pred, z_angle, choice=0)
+                temp_z.append(torch.cat((z_loss_mag.view(1), z_loss_angle.view(1)), dim=0))
+          
+            # for each batch, aggregate loss: index 0 is mag, index 1 is angle. 
+            # whats the best way to aggregate loss, sum or mean? sum gives equal weight to each frequency's loss, mean loss treats all freq. equally in terms of the contribution to final loss.
+
+            mean_loss_x_mag = sum([loss[0] for loss in temp_x]) / len(temp_x)
+            mean_loss_x_angle = sum([loss[1] for loss in temp_x]) / len(temp_x)
+
+            mean_loss_y_mag = sum([loss[0] for loss in temp_y]) / len(temp_y)
+            mean_loss_y_angle = sum([loss[1] for loss in temp_y]) / len(temp_y)
+
+            mean_loss_z_mag = sum([loss[0] for loss in temp_z]) / len(temp_z)
+            mean_loss_z_angle = sum([loss[1] for loss in temp_z]) / len(temp_z)
+            
+            x_loss.append(mean_loss_x_mag + mean_loss_x_angle)
+            y_loss.append(mean_loss_y_mag + mean_loss_y_angle)
+            z_loss.append(mean_loss_z_mag + mean_loss_z_angle)
+
+            # at the end of this loop, we have len({}_loss) = batch and gradients are preserved.
+            # after exiting the loop we'll aggregate across the batch.
+        
+        x_loss = torch.stack(x_loss, dim=0)
+        x_loss_agg = torch.mean(x_loss, dim=0).float()
+
+        y_loss = torch.stack(y_loss, dim=0)
+        y_loss_agg = torch.mean(y_loss, dim=0).float()
+
+        z_loss = torch.stack(z_loss, dim=0)
+        z_loss_agg = torch.mean(z_loss, dim=0).float()
 
         phase_loss = self.ae_loss(pred_phases.squeeze(), phases, choice = 0) # stick with MSE for this
         derivative_loss = self.ae_loss(pred_derivatives.squeeze(), derivatives, choice = 0) # stick with MSE for this
-        #thermo_loss = self.ae_loss(pred_intensities.squeeze(), intensities, choice = 2)
-        thermo_loss = 0
-        total_loss = (self.alpha*near_field_loss_x + self.alpha*near_field_loss_y +
-                            self.alpha*near_field_loss_z + self.gamma*phase_loss +
-                            self.delta*derivative_loss + self.epsilon*thermo_loss)
-        return {"near_field_loss_x": near_field_loss_x, "near_field_loss_y": near_field_loss_y,
-                "near_field_loss_z": near_field_loss_z,  "total_loss": total_loss, 
+        thermo_loss = self.ae_loss(pred_intensities.squeeze(), intensities, choice = 2)
+        
+        total_loss = (self.alpha*x_loss_agg + self.alpha*y_loss_agg + self.alpha*z_loss_agg +
+                            self.gamma*phase_loss + self.delta*derivative_loss + self.epsilon*thermo_loss).float()
+        
+        return {"x_loss": x_loss_agg, "y_loss": y_loss_agg, "z_loss": z_loss_agg,
                 "phase_loss": phase_loss, "derivative_loss": derivative_loss,
-                "thermo_loss": thermo_loss}
+                "thermo_loss": thermo_loss, "total_loss": total_loss} 
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
@@ -305,7 +429,6 @@ class SurrogateModel(LightningModule):
 
         # Constrain phase
         phase = self.constrain_phase(phase)
-        #embed(); exit()       
         # do you calculate derivatives or after constraining phase? I think after.  
         derivatives = self.convert_phase(phase)
 
@@ -317,8 +440,8 @@ class SurrogateModel(LightningModule):
         x[-1] = x_last
         x_recon = self.seg_head(self.decoder(*x)) # MLP for final decison - takes output of the decoder and makes "classification" predictions. in our case, we're using it to give us amplitude and phase. we're co-opting a segmentation model to do this.
         # seg head gives us a weird shape: (batch, channel, width, head) - so we send it to our self.last()
-        x_recon = self.last(x_recon) # gets reshaped
-        return [x_recon, phase, derivatives]
+        recon = self.last(x_recon) # gets reshaped
+        return [recon, phase, derivatives]
 
     def shared_step(self, batch, batch_idx): # training step, valid step, and testing all call this function. 
 
@@ -336,7 +459,7 @@ class SurrogateModel(LightningModule):
         shape = all_nf.shape
         all_nf_reshaped = all_nf.view(shape[0], shape[1]*shape[2]*shape[3], shape[4], shape[5]) 
         outputs = self.forward(all_nf_reshaped)
-        outputs[0] = outputs[0].view(shape) # resahhped back to same size as all_nf. now i can access components, frequencies, etc.
+        outputs[0] = outputs[0].view(shape) # reshaped back to same size as all_nf. now i can access components, frequencies, etc.
         return all_nf, outputs
         #return pred_near_field, pred_phase, pred_derivatives, pred_source_flux
         
@@ -348,37 +471,46 @@ class SurrogateModel(LightningModule):
         #Calculate loss
         loss = self.objective(batch, predictions, all_nf)
         total_loss = loss['total_loss']
-        near_field_loss = loss['near_field_loss']
+        x_loss = loss['x_loss']
+        y_loss = loss['y_loss']
+        z_loss = loss['z_loss']
         phase_loss = loss['phase_loss']
         derivative_loss = loss['derivative_loss']
-        #source_flux_loss = loss['source_flux']
+        thermo_loss = loss['thermo_loss']
         
         #Log the loss
         self.log("train_total_loss", total_loss, prog_bar = True, on_step = False, on_epoch = True, sync_dist = True)
-        self.log("train_near_field_loss", near_field_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+        self.log("train_nf_x_loss", x_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+        self.log("train_nf_y_loss", y_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+        self.log("train_nf_z_loss", z_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
         self.log("train_phase_loss", phase_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
         self.log("train_derivative_loss", derivative_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
-        #self.log("source_flux_loss", source_flux_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+        self.log("train_thermo_loss", thermo_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
 
         return {'loss' : total_loss, 'output' : predictions, 'target' : batch}
 
     def validation_step(self, batch, batch_idx):
         #Get predictions
-        predictions = self.shared_step(batch, batch_idx)
+        all_nf, predictions = self.shared_step(batch, batch_idx)
 
         #Calculate loss
-        loss = self.objective(batch, predictions)
+        loss = self.objective(batch, predictions, all_nf)
         total_loss = loss['total_loss']
-        near_field_loss = loss['near_field_loss']
+        x_loss = loss['x_loss']
+        y_loss = loss['y_loss']
+        z_loss = loss['z_loss']
         phase_loss = loss['phase_loss']
         derivative_loss = loss['derivative_loss']
-        #source_flux_loss = loss['source_flux']
-
+        thermo_loss = loss['thermo_loss']
+       
         #Log the loss
         self.log("val_total_loss", total_loss, prog_bar = True, on_step = False, on_epoch = True, sync_dist = True)
-        self.log("val_near_field_loss", near_field_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+        self.log("val_nf_x_loss", x_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+        self.log("val_nf_y_loss", y_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+        self.log("val_nf_z_loss", z_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
         self.log("val_phase_loss", phase_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
         self.log("val_derivative_loss", derivative_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+        self.log("val_thermo_loss", thermo_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
         #self.log("source_flux_loss", source_flux_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
 
         return {'loss' : total_loss, 'output' : predictions, 'target' : batch}

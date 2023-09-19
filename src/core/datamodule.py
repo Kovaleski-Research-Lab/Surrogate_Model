@@ -11,6 +11,7 @@ from typing import Optional
 from torchvision import transforms
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import Dataset, DataLoader, random_split
+from IPython import embed
 
 #--------------------------------
 # Import: Custom Python Libraries
@@ -18,21 +19,55 @@ from torch.utils.data import Dataset, DataLoader, random_split
 sys.path.append('../')
 from core import custom_transforms as ct
 
-def get_intensities(nf):
-    list = []
-    mag = nf[:,:,0,:,:]
-    angle = nf[:,:,1,:,:]
-    for m, a in zip(mag, angle):
+#nf_mag_x = freq[0,0,:,:]
+#nf_mag_y = freq[1,0,:,:]
+#nf_mag_z = freq[2,0,:,:]
+#nf_angle_x = freq[0,1,:,:]
+#nf_angle_y = freq[1,1,:,:]
+#nf_angle_z = freq[2,1,:,:]
+#complex_field_x = nf_mag_x * torch.exp(1j * nf_angle_x)
+#complex_field_y = nf_mag_y * torch.exp(1j * nf_angle_y)
+#complex_field_z = nf_mag_z * torch.exp(1j * nf_angle_z)
+#E_0 = torch.sqrt((abs(complex_field_x)**2 + abs(complex_field_y)**2 + abs(complex_field_z)**2))
+#I = 0.5 * E_0**2
+                                                                                                 
+# check:
+#x_mag = freq[0,0,:,:]
+#y_mag = freq[1,0,:,:]
+#z_mag = freq[2,0,:,:]
+#E_0 = torch.sqrt(x_mag**2 + y_mag**2 + z_mag**2)
+#intensity = 0.5 * E_0**2
+#intensity = intensity.mean()
+#temp.append(intensity)
 
-        complex_field = m * torch.exp(1j * a) # shape = 3,166,166
-        components = torch.split(complex_field, 1, dim=0)
-        x_comp, y_comp, z_comp = components
-        x_comp, y_comp, z_comp = [tensor.squeeze(0) for tensor in (x_comp, y_comp, z_comp)]
-        
-        E_0 = torch.sqrt((abs(x_comp)**2 + abs(y_comp)**2 + abs(z_comp)**2))
-        I = 0.5 * E_0**2
-        list.append(torch.mean(I))
-    return list
+def get_intensities(nf):
+    temp = []
+    for field in nf:
+        mag_x = field[0,0,:,:]
+        mag_y = field[1,0,:,:]
+        mag_z = field[2,0,:,:]
+        E_0 = torch.sqrt(torch.abs(mag_x)**2 + torch.abs(mag_y)**2 + torch.abs(mag_z)**2)
+        intensity = 0.5 * E_0**2
+        temp.append(torch.mean(intensity))
+    return temp
+
+
+
+#def get_intensities(nf):
+#    list = []
+#    mag = nf[:,:,0,:,:]
+#    angle = nf[:,:,1,:,:]
+#    for m, a in zip(mag, angle):
+#
+#        complex_field = m * torch.exp(1j * a) # shape = 3,166,166
+#        components = torch.split(complex_field, 1, dim=0)
+#        x_comp, y_comp, z_comp = components
+#        x_comp, y_comp, z_comp = [tensor.squeeze(0) for tensor in (x_comp, y_comp, z_comp)]
+#        
+#        E_0 = torch.sqrt((abs(x_comp)**2 + abs(y_comp)**2 + abs(z_comp)**2))
+#        I = 0.5 * E_0**2
+#        list.append(torch.mean(I))
+#    return list
 
 
 class CAI_Datamodule(LightningDataModule):
@@ -72,9 +107,16 @@ class CAI_Datamodule(LightningDataModule):
         if stage == "fit" or stage is None:
             dataset = customDataset(self.params, torch.load(os.path.join(self.path_data, train_file)),
                                     self.transform)
-
+            
             train_set_size = int(len(dataset)*0.8)
             valid_set_size = len(dataset) - train_set_size
+
+            # set minimum of batch size to 2            
+            while train_set_size % self.batch_size < 2 and valid_set_size % self.batch_size < 2:
+                self.batch_size += 1
+                if self.batch_size > 100:
+                    exit()
+
             self.cai_train, self.cai_valid = random_split(dataset,
                                                     [train_set_size, valid_set_size])
         if stage == "test" or stage is None:
