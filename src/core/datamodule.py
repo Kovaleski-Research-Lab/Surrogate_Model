@@ -111,7 +111,7 @@ class CAI_Datamodule(LightningDataModule):
             train_set_size = int(len(dataset)*0.8)
             valid_set_size = len(dataset) - train_set_size
 
-            # set minimum of batch size to 2            
+            # set minimum of batch size to 2 to prevent torch.squeeze() errors in objective function           
             while train_set_size % self.batch_size < 2 and valid_set_size % self.batch_size < 2:
                 self.batch_size += 1
                 if self.batch_size > 100:

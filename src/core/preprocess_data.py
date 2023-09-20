@@ -97,7 +97,6 @@ def get_intensity(Ex, Ey, Ez):
 def reconstruct_field(near_fields_mag, near_fields_angle):
 
     complex_field = near_fields_mag * torch.exp(1j * near_fields_angle)
-    #embed() # complex_field.shape = 166,166 when calling from datamodule.py
     complex_field = complex_field.squeeze(dim=2)
     components = torch.split(complex_field, 1, dim=1)
     x_comp, y_comp, z_comp = components
@@ -188,7 +187,6 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
             temp = torch.cat([nf_ex, nf_ey, nf_ez], dim=0).unsqueeze(dim=0) 
             near_fields_mag = temp.abs().unsqueeze(dim=2) # contains mag of x, y, and z
             near_fields_angle = temp.angle().unsqueeze(dim=2) # contains angle of x, y, and z
-            #embed();exit()
             wl = ''.join(filter(str.isdigit, key))
             all_near_fields[f'near_fields_{wl}'].append(torch.cat((near_fields_mag, near_fields_angle), dim=2))
     
@@ -199,6 +197,7 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
     phases = torch.cat(phases, dim=0).float()
     der = torch.stack(der).float()
 
+    # note: intensities are set in datamodule.py
     data = {'all_near_fields' : all_near_fields,    
             'radii' : radii, 
             'phases' : phases,
@@ -218,7 +217,7 @@ if __name__=="__main__":
     params = yaml.load(open('../config.yaml'), Loader = yaml.FullLoader).copy()
     pm = parameter_manager.ParameterManager(params=params)
 
-    kube = False
+    kube = True 
     if kube is True:
         folder = os.listdir('/develop/results') # KUBE
     else:
