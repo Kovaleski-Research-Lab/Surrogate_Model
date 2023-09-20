@@ -211,7 +211,7 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
         path_save = '/develop/results/preprocessed' #KUBE
     else:
         path_save = '/develop/data/spie_journal_2023/kube_dataset'
-    torch.save(data, os.path.join(path_save, 'dev.pt'))
+    torch.save(data, os.path.join(path_save, 'dataset.pt'))
 
 if __name__=="__main__":
     params = yaml.load(open('../config.yaml'), Loader = yaml.FullLoader).copy()
