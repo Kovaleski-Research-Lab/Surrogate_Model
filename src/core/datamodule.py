@@ -1,6 +1,7 @@
 #--------------------------------
 # Import: Basic Python Libraries
 #--------------------------------
+import pickle
 import os
 import sys
 import glob #TODO: Needed?
@@ -101,13 +102,82 @@ class CAI_Datamodule(LightningDataModule):
 
     def setup(self, stage: Optional[str] = None):
         #TODO
-        train_file = 'dev.pt'
+        pkl_directory = '/develop/data/spie_journal_2023/kube_dataset/preprocessed'
+        # Initialize an empty list to store the data from each .pkl file
+        all_data = []
+
+        # Iterate over each .pkl file in the directory
+        for pkl_file in os.listdir(pkl_directory):
+            if pkl_file.endswith('.pkl'):
+                # Load the data from the .pkl file
+                with open(os.path.join(pkl_directory, pkl_file), 'rb') as f:
+                    data = pickle.load(f)
+                    all_data.append(data)
+       
+        sim_times = []
+        #intensities = []
+        radii = []
+        phases = []
+        der = []
+        all_near_fields = []
+
+        for data in all_data:
+            all_near_fields.append(data['all_near_fields'])
+            sim_times.append(data['sim_times'])
+            radii.append(data['radii'])
+            phases.append(data['phases'])
+            der.append(data['derivatives'])
+        
+        keys = [key for d in all_near_fields for key in d.keys()]
+        #all_near_fields = {key: None for key in keys}
+        combined_dict = {}
+
+        # Iterate through the dictionaries in the list
+        for d in all_near_fields:
+            for key, value in d.items():
+                # Use the key to merge the data into combined_dict
+                if key in combined_dict:
+                    # If the key already exists, extend the data
+                    combined_dict[key].append(value)
+                else:
+                    # If the key doesn't exist, create a new list with the value
+                    combined_dict[key] = [value]
+
+        embed();exit()
+        for nf in all_near_fields:
+            nf = torch.cat(nf, dim=0).float()
+        radii = torch.cat(radii, dim=0).float()
+        phases = torch.cat(phases, dim=0).float()
+        der = torch.stack(der).float()
+
+        data = {
+                'all_near_fields' : all_near_fields,
+                'radii' : radii,
+                'phases' : phases,
+                'derivatives' : der,
+                'sim_times' : sim_times,
+                } 
+        #for key, nf in all_near_fields.items():
+        #    nf = torch.cat
+
+
+ 
+        # Specify the path and filename for the output .pt file
+        output_pt_file = '/develop/data/spie_journal_2023/kube_dataset/preprocessed/new_test.pt'
+        
+        # Save the combined data to a single .pt file
+        torch.save(combined_data, output_pt_file)
+
+        #train_file = 'dev.pt'
+        #train_file = 'dataset.pt'
         valid_file = None
         test_file = None
         if stage == "fit" or stage is None:
-            dataset = customDataset(self.params, torch.load(os.path.join(self.path_data, train_file)),
-                                    self.transform)
+            #dataset = customDataset(self.params, torch.load(os.path.join(self.path_data, train_file)),
+            #                        self.transform)
             
+            dataset = customDataset(self.params, torch.load(os.path.join(output_pt_file)),
+                                    self.transform)
             train_set_size = int(len(dataset)*0.8)
             valid_set_size = len(dataset) - train_set_size
 
@@ -142,7 +212,7 @@ class customDataset(Dataset):
         logging.debug("datamodule.py - Initializing customDataset")
         self.transform = transform
         logging.debug("customDataset | Setting transform to {}".format(self.transform))
-
+        embed();exit()
         self.all_near_fields = data['all_near_fields']
         #if params['source_wl'] == 1550:
         #    temp_near_fields = self.all_near_fields['near_fields_1550']
