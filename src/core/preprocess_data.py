@@ -129,6 +129,7 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
         raw_data_files = os.listdir(path)
 
     count = 0
+    print("did we make it here?")
     #for f in raw_data_files:
     for f in tqdm(raw_data_files, desc="Preprocessing data"):
         if kube is True:
@@ -226,7 +227,6 @@ if __name__=="__main__":
     
     print(f'\nNumber of files to process: {len(raw_data_files)}')
     print(" ")
-    embed();exit()
     preprocess_data(pm, kube, raw_data_files = raw_data_files)
     print("\nPreprocess complete")
     
