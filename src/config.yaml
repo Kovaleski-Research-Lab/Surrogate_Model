@@ -7,9 +7,9 @@ resim : 0
 torch_home: '/develop/pretrained_models'
 seed: [True, 1337]
 train: True
-exp_name: 'new_baseline_2'
-model_id: 'new_baseline_2'
-prev_model_id: 'new_baseline_1'
+exp_name: 'new_data'
+model_id: 'new_data_2'
+prev_model_id: 'new_data_1'
 #torch_home: '~/.cache/torch/'
 
 #--------------------------------
@@ -19,11 +19,11 @@ batch_size: 8
 num_epochs: 100
 
 mcl_params:
-    alpha: 1     #near-field
-    #beta: 1     #far-field
-    gamma: 0     #phase
-    delta: 0     #derivatives
-    epsilon: 1   #intensity
+    alpha: 1     # near-field
+    #beta: 1     # far-field
+    gamma: 0     # phase
+    delta: 0     # derivatives
+    epsilon: 1   # intensity - always on
 
 initial_intensities :
     2881: 2.133954817261386e-05

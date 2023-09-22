@@ -129,12 +129,11 @@ def load_loss(path):
        'train_nf_z_loss', 'train_phase_loss', 'train_derivative_loss',
        'train_thermo_loss']
 
-
 def plot_loss(loss_0, loss_1, loss_2, title, save_fig=False):
     
     plt.style.use("ggplot")
     
-    fig, ax = plt.subplots(1, 3, figsize = (9, 2.5))
+    fig, ax = plt.subplots(1, 3, figsize = (11, 3))
     
     fig.suptitle("Multi-stage loss, " + title)
         
@@ -240,7 +239,119 @@ def plot_loss(loss_0, loss_1, loss_2, title, save_fig=False):
     ax[1].set_ylabel("Loss")
     ax[2].set_ylabel("Loss")
     
-    fig.tight_layout(rect=[0,0,0.8,1])
+    fig.tight_layout(rect=[0,0,0.98,1])
+    
+# def plot_loss(loss_0, loss_1, loss_2, title, save_fig=False):
+    
+#     plt.style.use("ggplot")
+    
+#     fig, ax = plt.subplots(1, 3, figsize = (9, 2.5))
+    
+#     fig.suptitle("Multi-stage loss, " + title)
+        
+#     lterms = ['Phase Loss', 'Curvature Loss', 'Near Field Loss'] # near field: alpha, phase: gamma, derivs: delta
+#     labels = ["Train", "Valid"]
+#     linestyles = ['solid', 'dotted', 'dashdot']
+#     colors = ['darkgreen','purple','#4e88d9'] 
+#     # train dataset
+#     x_vals = loss_0['epoch']
+#     y_vals = loss_0['train_phase_loss']
+#     x_vals = x_vals[x_vals.index % 2 != 0]
+#     y_vals = y_vals[y_vals.index % 2 != 0]
+
+#     ax[0].plot(x_vals, y_vals, label=labels[0], c=colors[0])
+#     ax[0].legend()
+
+#     x_vals = loss_1['epoch']
+#     y_vals = loss_1['train_derivative_loss']
+#     x_vals = x_vals[x_vals.index % 2 != 0]
+#     y_vals = y_vals[y_vals.index % 2 != 0]
+    
+#     ax[1].plot(x_vals, y_vals, label=labels[0], c=colors[0])
+#     ax[1].legend()
+
+#     x_vals = loss_2['epoch']
+#     y_vals = loss_2['train_nf_x_loss']
+#     x_vals = x_vals[x_vals.index % 2 != 0]
+#     y_vals = y_vals[y_vals.index % 2 != 0]
+    
+#     ax[2].plot(x_vals, y_vals, label=labels[0] + " x", c=colors[0], linestyle=linestyles[0])
+#     #ax[2].legend()
+
+#     x_vals = loss_2['epoch']
+#     y_vals = loss_2['train_nf_y_loss']
+#     x_vals = x_vals[x_vals.index % 2 != 0]
+#     y_vals = y_vals[y_vals.index % 2 != 0]
+    
+#     ax[2].plot(x_vals, y_vals, label=labels[0] + " y", c=colors[0], linestyle=linestyles[1])
+#     #ax[2].legend()
+
+#     x_vals = loss_2['epoch']
+#     y_vals = loss_2['train_nf_z_loss']
+#     x_vals = x_vals[x_vals.index % 2 != 0]
+#     y_vals = y_vals[y_vals.index % 2 != 0]
+    
+#     ax[2].plot(x_vals, y_vals, label=labels[0] + " z", c=colors[0], linestyle=linestyles[2])
+#     #ax[2].legend()
+    
+#     # Valid dataset
+#     x_vals = loss_0['epoch']
+#     y_vals = loss_0['val_phase_loss']
+#     x_vals = x_vals[x_vals.index % 2 == 0]
+#     y_vals = y_vals[y_vals.index % 2 == 0]
+    
+#     ax[0].plot(x_vals, y_vals, label=labels[1], c=colors[1])
+#     ax[0].legend()
+
+#     x_vals = loss_1['epoch']
+#     y_vals = loss_1['val_derivative_loss']
+#     x_vals = x_vals[x_vals.index % 2 == 0]
+#     y_vals = y_vals[y_vals.index % 2 == 0]
+    
+#     ax[1].plot(x_vals, y_vals, label=labels[1], c=colors[1])
+#     ax[1].legend()
+
+#     x_vals = loss_2['epoch']
+#     y_vals = loss_2['val_nf_x_loss']
+#     x_vals = x_vals[x_vals.index % 2 == 0]
+#     y_vals = y_vals[y_vals.index % 2 == 0]
+
+#     ax[2].plot(x_vals, y_vals, label=labels[1] + " x", c=colors[1], linestyle=linestyles[0])
+#     #ax[2].legend()
+
+#     x_vals = loss_2['epoch']
+#     y_vals = loss_2['val_nf_y_loss']
+#     x_vals = x_vals[x_vals.index % 2 == 0]
+#     y_vals = y_vals[y_vals.index % 2 == 0]
+    
+#     ax[2].plot(x_vals, y_vals, label=labels[1] + " y", c=colors[1], linestyle=linestyles[1])
+#     #ax[2].legend()
+
+#     x_vals = loss_2['epoch']
+#     y_vals = loss_2['val_nf_z_loss']
+#     x_vals = x_vals[x_vals.index % 2 == 0]
+#     y_vals = y_vals[y_vals.index % 2 == 0]
+    
+#     ax[2].plot(x_vals, y_vals, label=labels[1] + " z", c=colors[1], linestyle=linestyles[2])
+#     ax[2].legend(loc='upper left', bbox_to_anchor=(1,1))
+
+#     ax[0].set_ylim([0, 10])
+#     ax[1].set_ylim([0, 10])
+#     #ax[2].set_ylim([0, 10])
+
+#     ax[0].set_title(lterms[0])
+#     ax[1].set_title(lterms[1])
+#     ax[2].set_title(lterms[2])
+
+#     ax[0].set_xlabel("Epoch")
+#     ax[1].set_xlabel("Epoch")
+#     ax[2].set_xlabel("Epoch")
+
+#     ax[0].set_ylabel("Loss")
+#     ax[1].set_ylabel("Loss")
+#     ax[2].set_ylabel("Loss")
+    
+#     fig.tight_layout(rect=[0,0,0.8,1])
 
     # if save_fig == True:
     #     l_string = r'($\alpha$' + " " + " " + r'$\gamma$' + " " + r'$\delta$)'

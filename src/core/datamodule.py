@@ -20,27 +20,6 @@ from IPython import embed
 sys.path.append('../')
 from core import custom_transforms as ct
 
-#nf_mag_x = freq[0,0,:,:]
-#nf_mag_y = freq[1,0,:,:]
-#nf_mag_z = freq[2,0,:,:]
-#nf_angle_x = freq[0,1,:,:]
-#nf_angle_y = freq[1,1,:,:]
-#nf_angle_z = freq[2,1,:,:]
-#complex_field_x = nf_mag_x * torch.exp(1j * nf_angle_x)
-#complex_field_y = nf_mag_y * torch.exp(1j * nf_angle_y)
-#complex_field_z = nf_mag_z * torch.exp(1j * nf_angle_z)
-#E_0 = torch.sqrt((abs(complex_field_x)**2 + abs(complex_field_y)**2 + abs(complex_field_z)**2))
-#I = 0.5 * E_0**2
-                                                                                                 
-# check:
-#x_mag = freq[0,0,:,:]
-#y_mag = freq[1,0,:,:]
-#z_mag = freq[2,0,:,:]
-#E_0 = torch.sqrt(x_mag**2 + y_mag**2 + z_mag**2)
-#intensity = 0.5 * E_0**2
-#intensity = intensity.mean()
-#temp.append(intensity)
-
 def get_intensities(nf):
     temp = []
     for field in nf:
@@ -51,25 +30,6 @@ def get_intensities(nf):
         intensity = 0.5 * E_0**2
         temp.append(torch.mean(intensity))
     return temp
-
-
-
-#def get_intensities(nf):
-#    list = []
-#    mag = nf[:,:,0,:,:]
-#    angle = nf[:,:,1,:,:]
-#    for m, a in zip(mag, angle):
-#
-#        complex_field = m * torch.exp(1j * a) # shape = 3,166,166
-#        components = torch.split(complex_field, 1, dim=0)
-#        x_comp, y_comp, z_comp = components
-#        x_comp, y_comp, z_comp = [tensor.squeeze(0) for tensor in (x_comp, y_comp, z_comp)]
-#        
-#        E_0 = torch.sqrt((abs(x_comp)**2 + abs(y_comp)**2 + abs(z_comp)**2))
-#        I = 0.5 * E_0**2
-#        list.append(torch.mean(I))
-#    return list
-
 
 class CAI_Datamodule(LightningDataModule):
     def __init__(self, params, transform = None):
@@ -92,7 +52,7 @@ class CAI_Datamodule(LightningDataModule):
     def initialize_cpus(self, n_cpus):
         # Make sure default number of cpus is not more than the system has
         if n_cpus > os.cpu_count():
-            n_cpus = 1
+           n_cpus = 1
         self.n_cpus = n_cpus 
         logging.debug("CAI_DataModule | Setting CPUS to {}".format(self.n_cpus))
 
@@ -100,75 +60,94 @@ class CAI_Datamodule(LightningDataModule):
         pass
         #preprocess_data.preprocess_data(path = os.path.join(self.path_data, 'raw'))
 
-    def setup(self, stage: Optional[str] = None):
-        #TODO
-        pkl_directory = '/develop/data/spie_journal_2023/kube_dataset/preprocessed'
-        # Initialize an empty list to store the data from each .pkl file
-        all_data = []
-
-        # Iterate over each .pkl file in the directory
+    def load_data(self, pkl_directory):
+        nf = []
+        radii = []
+        phases = []
+        derivatives = []
+        #sim_times = []
         for pkl_file in os.listdir(pkl_directory):
             if pkl_file.endswith('.pkl'):
                 # Load the data from the .pkl file
                 with open(os.path.join(pkl_directory, pkl_file), 'rb') as f:
                     data = pickle.load(f)
-                    all_data.append(data)
-       
-        sim_times = []
-        #intensities = []
-        radii = []
-        phases = []
-        der = []
-        all_near_fields = []
-
-        for data in all_data:
-            all_near_fields.append(data['all_near_fields'])
-            sim_times.append(data['sim_times'])
-            radii.append(data['radii'])
-            phases.append(data['phases'])
-            der.append(data['derivatives'])
+                    nf.append(data['all_near_fields'])
+                    radii.append(data['radii'])
+                    phases.append(data['phases'])
+                    derivatives.append(data['derivatives'])
+       #             sim_times.append(data['sim_times'])
         
-        keys = [key for d in all_near_fields for key in d.keys()]
-        #all_near_fields = {key: None for key in keys}
-        combined_dict = {}
-
-        # Iterate through the dictionaries in the list
-        for d in all_near_fields:
-            for key, value in d.items():
-                # Use the key to merge the data into combined_dict
-                if key in combined_dict:
-                    # If the key already exists, extend the data
-                    combined_dict[key].append(value)
-                else:
-                    # If the key doesn't exist, create a new list with the value
-                    combined_dict[key] = [value]
-
-        embed();exit()
-        for nf in all_near_fields:
-            nf = torch.cat(nf, dim=0).float()
-        radii = torch.cat(radii, dim=0).float()
-        phases = torch.cat(phases, dim=0).float()
-        der = torch.stack(der).float()
-
-        data = {
-                'all_near_fields' : all_near_fields,
-                'radii' : radii,
+        data = {'all_near_fields' : nf,    
+                'radii' : radii, 
                 'phases' : phases,
-                'derivatives' : der,
-                'sim_times' : sim_times,
-                } 
-        #for key, nf in all_near_fields.items():
-        #    nf = torch.cat
+                'derivatives' : derivatives,
+                #'sim_times' : sim_times,
+                }
+        
+        return data
 
+    def setup(self, stage: Optional[str] = None):
+        #TODO
 
- 
+        # this next block is a bandaid. the model expects a .pt file but preprocess.py was changed
+        # to dump out .pkl files to work better with kubernetes.
+        # ---- Need to overhaul the data preprocess step for this model! ----
+        pkl_directory = '/develop/data/spie_journal_2023/kube_dataset/preprocessed'
+
+        new_data = {
+                    'all_near_fields': {
+                                    'near_fields_1550': None, 
+                                    'near_fields_1060': None,
+                                    'near_fields_1300': None,
+                                    'near_fields_1650': None,
+                                    'near_fields_2881': None,
+                                    },
+                    'radii': [],
+                    'phases': [],
+                    'derivatives': [],
+                    #'sim_times': [],
+                    }
+
+        pkl_data = self.load_data(pkl_directory)
+        
+        temp_1550, temp_1060, temp_1300, temp_1650, temp_2881 = [], [], [], [], []
+        for element in pkl_data['all_near_fields']:  # looping through a list
+            
+            # each element is a dictionary
+            for key, value in element.items():
+                if key == 'near_fields_1550':
+                    temp_1550.append(value)
+                if key == 'near_fields_1650':
+                    temp_1650.append(value)
+                if key == 'near_fields_1300':
+                    temp_1300.append(value)
+                if key == 'near_fields_2881':
+                    temp_2881.append(value)
+                if key == 'near_fields_1060':
+                    temp_1060.append(value)
+
+        new_data['all_near_fields']['near_fields_1550'] = temp_1550
+        new_data['all_near_fields']['near_fields_1650'] = temp_1650
+        new_data['all_near_fields']['near_fields_1300'] = temp_1300
+        new_data['all_near_fields']['near_fields_1060'] = temp_1060
+        new_data['all_near_fields']['near_fields_2881'] = temp_2881
+        
+        for radius in pkl_data['radii']:    
+            new_data['radii'].append(radius.squeeze())
+        for phase in pkl_data['phases']:    
+            new_data['phases'].append(phase.squeeze())
+        for der in pkl_data['derivatives']:
+            new_data['derivatives'].append(der)
+        #for time in pkl_data['sim_times']:
+        #    new_data['sim_times'].append(time)
         # Specify the path and filename for the output .pt file
-        output_pt_file = '/develop/data/spie_journal_2023/kube_dataset/preprocessed/new_test.pt'
+        filename = "testing.pt"
+        output_pt_file = f'/develop/data/spie_journal_2023/kube_dataset/preprocessed/{filename}'
         
         # Save the combined data to a single .pt file
-        torch.save(combined_data, output_pt_file)
+        torch.save(new_data, output_pt_file)
 
-        #train_file = 'dev.pt'
+        train_file = filename
         #train_file = 'dataset.pt'
         valid_file = None
         test_file = None
@@ -212,7 +191,6 @@ class customDataset(Dataset):
         logging.debug("datamodule.py - Initializing customDataset")
         self.transform = transform
         logging.debug("customDataset | Setting transform to {}".format(self.transform))
-        embed();exit()
         self.all_near_fields = data['all_near_fields']
         #if params['source_wl'] == 1550:
         #    temp_near_fields = self.all_near_fields['near_fields_1550']
@@ -230,7 +208,6 @@ class customDataset(Dataset):
         temp_nf_1550 = self.all_near_fields['near_fields_1550']
         temp_nf_1300 = self.all_near_fields['near_fields_1300']
         temp_nf_1060 = self.all_near_fields['near_fields_1060']
-
         temp_nf_2881, temp_nf_1650, temp_nf_1550, temp_nf_1300, temp_nf_1060 = (
                                             torch.stack(temp_nf_2881, dim=0),
                                             torch.stack(temp_nf_1650, dim=0),
@@ -258,7 +235,7 @@ class customDataset(Dataset):
         
         #self.transform = ct.per_sample_normalize()
         self.transform = None
-
+    
     def __len__(self):
         return len(self.nf_1550)
 

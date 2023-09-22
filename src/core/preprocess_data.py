@@ -119,7 +119,7 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
     # the rest of the info can be stored in individual lists.
     
     eps_data = []
-    sim_times = []
+    #sim_times = []
     #intensities = []
     radii = []
     phases = []
@@ -189,7 +189,7 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
                     'radii' : radii, 
                     'phases' : phases,                                                                                                   
                     'derivatives' : der,
-                    'sim_times' : sim_times,
+#                    'sim_times' : sim_times,
                     }
             if kube is True:
                 path_save = '/develop/results/preprocessed' #KUBE
@@ -207,12 +207,13 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
             print("pickle error: pickle file error")
         except Exception as e:
             print("Some other error: ", e)
-        
+    print(count + " files preprocessed successfully.")
+    
 if __name__=="__main__":
     params = yaml.load(open('../config.yaml'), Loader = yaml.FullLoader).copy()
     pm = parameter_manager.ParameterManager(params=params)
 
-    kube = False 
+    kube = True 
     if kube is True:
         folder = os.listdir('/develop/results') # KUBE
     else:
@@ -220,11 +221,12 @@ if __name__=="__main__":
 
     raw_data_files = []
     for filename in folder:
-        #if filename.endswith("6.pkl"):
-        raw_data_files.append(filename)
+        if filename.endswith(".pkl"):
+            raw_data_files.append(filename)
     
     print(f'\nNumber of files to process: {len(raw_data_files)}')
     print(" ")
+    embed();exit()
     preprocess_data(pm, kube, raw_data_files = raw_data_files)
     print("\nPreprocess complete")
     
