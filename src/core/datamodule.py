@@ -88,64 +88,68 @@ class CAI_Datamodule(LightningDataModule):
 
     def setup(self, stage: Optional[str] = None):
         #TODO
-
         # this next block is a bandaid. the model expects a .pt file but preprocess.py was changed
         # to dump out .pkl files to work better with kubernetes.
         # ---- Need to overhaul the data preprocess step for this model! ----
-        pkl_directory = '/develop/data/spie_journal_2023/kube_dataset/preprocessed'
-
-        new_data = {
-                    'all_near_fields': {
-                                    'near_fields_1550': None, 
-                                    'near_fields_1060': None,
-                                    'near_fields_1300': None,
-                                    'near_fields_1650': None,
-                                    'near_fields_2881': None,
-                                    },
-                    'radii': [],
-                    'phases': [],
-                    'derivatives': [],
-                    #'sim_times': [],
-                    }
-
-        pkl_data = self.load_data(pkl_directory)
-        
-        temp_1550, temp_1060, temp_1300, temp_1650, temp_2881 = [], [], [], [], []
-        for element in pkl_data['all_near_fields']:  # looping through a list
-            
-            # each element is a dictionary
-            for key, value in element.items():
-                if key == 'near_fields_1550':
-                    temp_1550.append(value)
-                if key == 'near_fields_1650':
-                    temp_1650.append(value)
-                if key == 'near_fields_1300':
-                    temp_1300.append(value)
-                if key == 'near_fields_2881':
-                    temp_2881.append(value)
-                if key == 'near_fields_1060':
-                    temp_1060.append(value)
-
-        new_data['all_near_fields']['near_fields_1550'] = temp_1550
-        new_data['all_near_fields']['near_fields_1650'] = temp_1650
-        new_data['all_near_fields']['near_fields_1300'] = temp_1300
-        new_data['all_near_fields']['near_fields_1060'] = temp_1060
-        new_data['all_near_fields']['near_fields_2881'] = temp_2881
-        
-        for radius in pkl_data['radii']:    
-            new_data['radii'].append(radius.squeeze())
-        for phase in pkl_data['phases']:    
-            new_data['phases'].append(phase.squeeze())
-        for der in pkl_data['derivatives']:
-            new_data['derivatives'].append(der)
-        #for time in pkl_data['sim_times']:
-        #    new_data['sim_times'].append(time)
-        # Specify the path and filename for the output .pt file
-        filename = "testing.pt"
+        first=False # if i haven't already put all the data into a .pt file
+        filename = "dataset.pt"
         output_pt_file = f'/develop/data/spie_journal_2023/kube_dataset/preprocessed/{filename}'
-        
-        # Save the combined data to a single .pt file
-        torch.save(new_data, output_pt_file)
+        if first==True:
+            pkl_directory = '/develop/data/spie_journal_2023/kube_dataset/preprocessed/debugging'
+            #pkl_directory = '/develop/data/spie_journal_2023/kube_dataset/preprocessed'
+
+            new_data = {
+                        'all_near_fields': {
+                                        'near_fields_1550': None, 
+                                        'near_fields_1060': None,
+                                        'near_fields_1300': None,
+                                        'near_fields_1650': None,
+                                        'near_fields_2881': None,
+                                        },
+                        'radii': [],
+                        'phases': [],
+                        'derivatives': [],
+                        #'sim_times': [],
+                        }
+
+            pkl_data = self.load_data(pkl_directory)
+            
+            temp_1550, temp_1060, temp_1300, temp_1650, temp_2881 = [], [], [], [], []
+            for element in pkl_data['all_near_fields']:  # looping through a list
+                
+                # each element is a dictionary
+                for key, value in element.items():
+                    if key == 'near_fields_1550':
+                        temp_1550.append(value)
+                    if key == 'near_fields_1650':
+                        temp_1650.append(value)
+                    if key == 'near_fields_1300':
+                        temp_1300.append(value)
+                    if key == 'near_fields_2881':
+                        temp_2881.append(value)
+                    if key == 'near_fields_1060':
+                        temp_1060.append(value)
+
+            new_data['all_near_fields']['near_fields_1550'] = temp_1550
+            new_data['all_near_fields']['near_fields_1650'] = temp_1650
+            new_data['all_near_fields']['near_fields_1300'] = temp_1300
+            new_data['all_near_fields']['near_fields_1060'] = temp_1060
+            new_data['all_near_fields']['near_fields_2881'] = temp_2881
+            
+            for radius in pkl_data['radii']:    
+                new_data['radii'].append(radius.squeeze())
+            for phase in pkl_data['phases']:    
+                new_data['phases'].append(phase.squeeze())
+            for der in pkl_data['derivatives']:
+                new_data['derivatives'].append(der)
+            #for time in pkl_data['sim_times']:
+            #    new_data['sim_times'].append(time)
+            # Specify the path and filename for the output .pt file
+            filename = filename
+            #filename = "dataset.pt"
+            output_pt_file = output_pt_file
+            # Save the combined data to a single .pt file
+            torch.save(new_data, output_pt_file)
 
         train_file = filename
         #train_file = 'dataset.pt'

@@ -57,6 +57,7 @@ def run(params):
     # Initialize: PytorchLightning Trainer
     if(pm.gpu_flag and torch.cuda.is_available()):
         logging.debug("Training with GPUs")
+        # pass detect_anomaly=True to check gradients
         trainer = Trainer(logger = logger, accelerator = "cuda", num_nodes = 1, 
                           check_val_every_n_epoch = pm.valid_rate, num_sanity_val_steps = 1,
                           devices = pm.gpu_list, max_epochs = pm.num_epochs, 
@@ -75,7 +76,7 @@ def run(params):
    
     trainer.fit(model,data) # this calls train_step() and valid_step()
     
-    #trainer.test(model, dataloaders=[data.val_dataloader(),data.train_dataloader()]) # this calls model.test_step. 
+    trainer.test(model, dataloaders=[data.val_dataloader(),data.train_dataloader()]) # this calls model.test_step. 
 
     # Dump config
     yaml.dump(params, open(os.path.join(pm.path_root, f'{pm.path_results}/params.yaml'),'w'))

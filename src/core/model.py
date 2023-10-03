@@ -64,33 +64,45 @@ class SurrogateModel(LightningModule):
 
         #Lists to hold testing things - there might be a better way #TODO
         # for encoder
-        self.val_phase_predictions = []
-        self.val_phase_truth = []
-        self.val_deriv_predictions = []
-        self.val_deriv_truth = []
+        self.val_phase_pred, self.val_phase_truth = [], []
+        self.val_deriv_pred, self.val_deriv_truth = [], []
+        self.val_intensity_pred, self.val_intensity_truth = [], []
 
-        self.train_phase_predictions = []
-        self.train_phase_truth = []
-        self.train_deriv_predictions = []
-        self.train_deriv_truth = []
+        self.train_phase_pred, self.train_phase_truth = [], []
+        self.train_deriv_pred, self.train_deriv_truth = [], []    
+        self.train_intensity_pred, self.train_intensity_truth = [], []
 
         # for resim -- these get populated at the very end. change this
-        self.val_phase_pred_resim = []
-        self.val_phase_truth_resim = []
-        self.val_nf_pred_resim = []
-        self.val_nf_truth_resim = []
+        self.val_phase_pred_resim, self.val_phase_truth_resim = [], []
+        self.val_intensity_pred_resim, self.val_intensity_truth_resim = [], []
+
+        self.val_nf_2881_pred_resim, self.val_nf_2881_truth_resim = [], []
+        self.val_nf_1650_pred_resim, self.val_nf_1650_truth_resim = [], []
+        self.val_nf_1550_pred_resim, self.val_nf_1550_truth_resim = [], []
+        self.val_nf_1300_pred_resim, self.val_nf_1300_truth_resim = [], []
+        self.val_nf_1060_pred_resim, self.val_nf_1060_truth_resim = [], []
     
-        self.train_phase_pred_resim = []
-        self.train_phase_truth_resim = []
-        self.train_nf_pred_resim = []
-        self.train_nf_truth_resim = []
+        self.train_phase_pred_resim, self.train_phase_truth_resim = [], []
+        self.train_intensity_pred_resim, self.train_intensity_truth_resim = [], []
+
+        self.train_nf_2881_pred_resim, self.train_nf_2881_truth_resim = [], []
+        self.train_nf_1650_pred_resim, self.train_nf_1650_truth_resim = [], []
+        self.train_nf_1550_pred_resim, self.train_nf_1550_truth_resim = [], []
+        self.train_nf_1300_pred_resim, self.train_nf_1300_truth_resim = [], []
+        self.train_nf_1060_pred_resim, self.train_nf_1060_truth_resim = [], []
 
         # for recon
-        self.val_nf_amp_diff = []
-        self.val_nf_angle_diff = []
+        self.val_nf_2881_amp_diff, self.val_nf_2881_angle_diff = [], []
+        self.val_nf_1650_amp_diff, self.val_nf_1650_angle_diff = [], []
+        self.val_nf_1550_amp_diff, self.val_nf_1550_angle_diff = [], []
+        self.val_nf_1300_amp_diff, self.val_nf_1300_angle_diff = [], []
+        self.val_nf_1060_amp_diff, self.val_nf_1060_angle_diff = [], []
 
-        self.train_nf_amp_diff = []
-        self.train_nf_angle_diff = []
+        self.train_nf_2881_amp_diff, self.train_nf_2881_angle_diff = [], []
+        self.train_nf_1650_amp_diff, self.train_nf_1650_angle_diff = [], []
+        self.train_nf_1550_amp_diff, self.train_nf_1550_angle_diff = [], []
+        self.train_nf_1300_amp_diff, self.train_nf_1300_angle_diff = [], []
+        self.train_nf_1060_amp_diff, self.train_nf_1060_angle_diff = [], []
 
         self.save_hyperparameters()
 
@@ -101,6 +113,7 @@ class SurrogateModel(LightningModule):
                                              # then we mult by pi to scale it
        
     def select_model(self):
+
         #Model
         if self.backbone == "resnet18":
              model = smp.Unet(encoder_name = "resnet18", encoder_weights = self.weights, 
@@ -226,6 +239,26 @@ class SurrogateModel(LightningModule):
         intensity = intensity.mean()
         return intensity
 
+    def get_pred_intensities(self, pred_nf):
+
+        pred_intensities = []
+
+        for pred in pred_nf: # batch size is 8, so 8 iterations. shape of each pred_recon is [5, 3, 2, xdim, ydim]
+            temp = [] # to hold the intensities of a particular wavelength
+            for i in range(pred.shape[0]):
+                freq = pred[i,:,:,:,:]
+                x_mag = freq[0,0,:,:] # 0: x, 0: mag
+                y_mag = freq[1,0,:,:] # 1: y, 0: mag
+                z_mag = freq[2,0,:,:] # 2: z, 0: mag
+                intensity = self.calculate_intensity(x_mag, y_mag, z_mag)
+                temp.append(intensity)
+            
+            pred_intensities.append(temp) # index 0 holds sample 0, etc.
+
+        pred_intensities = torch.tensor(pred_intensities, requires_grad=True) # matches the shape of intensities.
+        
+        return pred_intensities
+
     def calculate_thermo_loss(self):
         pass
  
@@ -251,23 +284,9 @@ class SurrogateModel(LightningModule):
 
         # We get predictions from the model. We'll have to calculate predicted intensities.
         pred_nf, pred_phases, pred_derivatives = predictions[0], predictions[1], predictions[2]
-        pred_intensities = []
 
-        for pred in pred_nf: # batch size is 8, so 8 iterations. shape of each pred_recon is [5, 3, 2, xdim, ydim]
-            temp = [] # to hold the intensities of a particular wavelength
-            for i in range(pred.shape[0]):
-                freq = pred[i,:,:,:,:]
-                x_mag = freq[0,0,:,:] # 0: x, 0: mag
-                y_mag = freq[1,0,:,:] # 1: y, 0: mag
-                z_mag = freq[2,0,:,:] # 2: z, 0: mag
-                intensity = self.calculate_intensity(x_mag, y_mag, z_mag)
-                temp.append(intensity)
-            
-            pred_intensities.append(temp) # index 0 holds sample 0, etc.
-
-        pred_intensities = torch.tensor(pred_intensities, requires_grad=True) # matches the shape of intensities.
+        pred_intensities = self.get_pred_intensities(pred_nf)
         # this needs to be every mag and phase of every comp of every freq gets passed through MSE 
-                
         # nf.shape and pred_nf.shape is [8, 5, 3, 2, 166, 166] - batch, freq, component, mag/angle, xdim, ydim
 
         x_loss, y_loss, z_loss = [], [], [] # append these list with shape [2] tensors: magnitude loss followed by angle loss
@@ -352,65 +371,136 @@ class SurrogateModel(LightningModule):
         return torch.abs(prediction - label)
 
     def organize_testing(self, predictions, batch, batch_idx, dataloader): # this is part of those lists that has to be fixed.
-        #pred_near_field, pred_phase, pred_derivative, pred_source_flux = predictions
-        pred_near_field, pred_phase, pred_derivative = predictions
-        #true_near_field, true_radii, true_phase, true_derivative, true_source_flux = batch
-        true_near_field, true_radii, true_phase, true_derivative = batch
-        true_phase = self.constrain_phase(true_phase)
+        
+        pred_nf, pred_phases, pred_derivatives, pred_intensities = predictions[0], predictions[1], predictions[2], predictions[3]
+        
+        pred_nf_2881, true_nf_2881 = pred_nf[:,0,:,:,:,:], batch['nf_2881']
+        pred_nf_1650, true_nf_1650 = pred_nf[:,1,:,:,:,:], batch['nf_1650']
+        pred_nf_1550, true_nf_1550 = pred_nf[:,2,:,:,:,:], batch['nf_1550']
+        pred_nf_1300, true_nf_1300 = pred_nf[:,3,:,:,:,:], batch['nf_1300']
+        pred_nf_1060, true_nf_1060 = pred_nf[:,4,:,:,:,:], batch['nf_1060']
+       
+        true_phases, true_derivatives = batch['phases'], batch['derivatives']
+        true_intensities = [batch['intensities_2881'], batch['intensities_1650'], batch['intensities_1550'],
+                            batch['intensities_1300'], batch['intensities_1060']] 
+        
+        true_intensities = [x.detach().cpu() for x in true_intensities]
+        true_intensities = [x.squeeze() for x in true_intensities]
+        true_intensities = torch.stack(true_intensities)
+        true_intensities = true_intensities.transpose(0,1)
 
         if dataloader == 0: #Val dataloader 
             # encoder
-            self.val_phase_predictions.append(pred_phase.detach().cpu().numpy())
-            self.val_phase_truth.append(true_phase.detach().cpu().numpy())
-            self.val_deriv_predictions.append(pred_derivative.detach().cpu().numpy())
-            self.val_deriv_truth.append(true_derivative.detach().cpu().numpy())
-            #self.val_source_flux_truth.append(true_source_flux.detach().cpu().numpy())
+            self.val_phase_pred.append(pred_phases.detach().cpu().numpy())
+            self.val_phase_truth.append(true_phases.detach().cpu().numpy())
+            self.val_deriv_pred.append(pred_derivatives.detach().cpu().numpy())
+            self.val_deriv_truth.append(true_derivatives.detach().cpu().numpy())
+            self.val_intensity_pred.append(pred_intensities.detach().cpu().numpy())
+            self.val_intensity_truth.append(true_intensities.numpy())
+
+            # decoder (recon) - just doing y component for now.
+            self.val_nf_2881_amp_diff.append(self.get_abs_difference(pred_nf_2881[:,1,0,:,:], # batch, component, mag/angle, xdim, ydim
+                                                    true_nf_2881[:,1,0,:,:]).detach().cpu().numpy())
+            self.val_nf_2881_angle_diff.append(self.get_abs_difference(pred_nf_2881[:,1,1,:,:],
+                                                    true_nf_2881[:,1,1,:,:]).detach().cpu().numpy())
+
+            self.val_nf_1650_amp_diff.append(self.get_abs_difference(pred_nf_1650[:,1,0,:,:],
+                                                    true_nf_1650[:,1,0,:,:]).detach().cpu().numpy())
+            self.val_nf_1650_angle_diff.append(self.get_abs_difference(pred_nf_1650[:,1,1,:,:],
+                                                    true_nf_1650[:,1,1,:,:]).detach().cpu().numpy())
+
+            self.val_nf_1550_amp_diff.append(self.get_abs_difference(pred_nf_1550[:,1,0,:,:],
+                                                    true_nf_1550[:,1,0,:,:]).detach().cpu().numpy())
+            self.val_nf_1550_angle_diff.append(self.get_abs_difference(pred_nf_1550[:,1,1,:,:],
+                                                    true_nf_1550[:,1,1,:,:]).detach().cpu().numpy())
+
+            self.val_nf_1300_amp_diff.append(self.get_abs_difference(pred_nf_1300[:,1,0,:,:],
+                                                    true_nf_1300[:,1,0,:,:]).detach().cpu().numpy())
+            self.val_nf_1300_angle_diff.append(self.get_abs_difference(pred_nf_1300[:,1,1,:,:],
+                                                    true_nf_1300[:,1,1,:,:]).detach().cpu().numpy())
+
+            self.val_nf_1060_amp_diff.append(self.get_abs_difference(pred_nf_1060[:,1,0,:,:],
+                                                    true_nf_1060[:,1,0,:,:]).detach().cpu().numpy())
+            self.val_nf_1060_angle_diff.append(self.get_abs_difference(pred_nf_1060[:,1,1,:,:],
+                                                    true_nf_1060[:,1,1,:,:]).detach().cpu().numpy())
             
-            # decoder
-            self.val_nf_amp_diff.append(self.get_abs_difference(pred_near_field[:,0,:,:], true_near_field[:,1,0,:,:]).detach().cpu().numpy())
-            self.val_nf_angle_diff.append(self.get_abs_difference(pred_near_field[:,1,:,:], true_near_field[:,1,1,:,:]).detach().cpu().numpy())
-
-            #self.val_ff_amp_diff.append(self.get_abs_difference(pred_far_field[:,0,:,:], true_far_field[:,1,0,:,:]).detach().cpu().numpy())
-            #self.val_ff_angle_diff.append(self.get_abs_difference(pred_far_field[:,1,:,:], true_far_field[:,1,1,:,:]).detach().cpu().numpy())
-
-            # resim
+            #resim
             if batch_idx == 0:
-                self.val_phase_pred_resim.append(pred_phase.detach().cpu().numpy())
-                self.val_phase_truth_resim.append(true_phase.detach().cpu().numpy())
+                self.val_phase_pred_resim.append(pred_phases.detach().cpu().numpy())
+                self.val_phase_truth_resim.append(true_phases.detach().cpu().numpy())
+                self.val_intensity_pred_resim.append(pred_intensities.detach().cpu().numpy())
+                self.val_intensity_truth_resim.append(true_intensities.detach().cpu().numpy())
 
-                self.val_nf_pred_resim.append(pred_near_field.detach().cpu().numpy())
-                self.val_nf_truth_resim.append(true_near_field[:,1,:,:,:].detach().cpu().numpy())
-
-                #self.val_ff_pred_resim.append(pred_far_field.detach().cpu().numpy())
-                #self.val_ff_truth_resim.append(true_far_field[:,1,:,:,:].detach().cpu().numpy())
+                self.val_nf_2881_pred_resim.append(pred_nf_2881.detach().cpu().numpy())
+                self.val_nf_2881_truth_resim.append(true_nf_2881[:,1,:,:,:].detach().cpu().numpy())
                 
+                self.val_nf_1650_pred_resim.append(pred_nf_1650.detach().cpu().numpy())
+                self.val_nf_1650_truth_resim.append(true_nf_1650[:,1,:,:,:].detach().cpu().numpy())
+
+                self.val_nf_1550_pred_resim.append(pred_nf_1550.detach().cpu().numpy())
+                self.val_nf_1550_truth_resim.append(true_nf_1550[:,1,:,:,:].detach().cpu().numpy())
+            
+                self.val_nf_1300_pred_resim.append(pred_nf_1300.detach().cpu().numpy())
+                self.val_nf_1300_truth_resim.append(true_nf_1300[:,1,:,:,:].detach().cpu().numpy())
+
+                self.val_nf_1060_pred_resim.append(pred_nf_1060.detach().cpu().numpy())
+                self.val_nf_1060_truth_resim.append(true_nf_1060[:,1,:,:,:].detach().cpu().numpy())
+                
+
         elif dataloader == 1: #Train dataloader
-            # encoder
-            self.train_phase_predictions.append(pred_phase.detach().cpu().numpy())
-            self.train_phase_truth.append(true_phase.detach().cpu().numpy())
+            self.train_phase_pred.append(pred_phases.detach().cpu().numpy())
+            self.train_phase_truth.append(true_phases.detach().cpu().numpy())
+            self.train_deriv_pred.append(pred_derivatives.detach().cpu().numpy())
+            self.train_deriv_truth.append(true_derivatives.detach().cpu().numpy())
+            self.train_intensity_pred.append(pred_intensities.detach().cpu().numpy())
+            self.train_intensity_truth.append(true_intensities.numpy())
 
-            self.train_deriv_predictions.append(pred_derivative.detach().cpu().numpy())
-            self.train_deriv_truth.append(true_derivative.detach().cpu().numpy())
+            # decoder (recon)
+            self.train_nf_2881_amp_diff.append(self.get_abs_difference(pred_nf_2881[:,1,0,:,:],
+                                                 true_nf_2881[:,1,0,:,:]).detach().cpu().numpy())
+            self.train_nf_2881_angle_diff.append(self.get_abs_difference(pred_nf_2881[:,1,1,:,:],
+                                                 true_nf_2881[:,1,1,:,:]).detach().cpu().numpy())
 
-            #self.train_source_flux_predictions.append(pred_source_flux.detach().cpu().numpy())
-            #self.train_source_flux_truth.append(true_source_flux.detach().cup().numpy())
-            # decoder
-            self.train_nf_amp_diff.append(self.get_abs_difference(pred_near_field[:,0,:,:], true_near_field[:,1,0,:,:]).detach().cpu().numpy())
-            self.train_nf_angle_diff.append(self.get_abs_difference(pred_near_field[:,1,:,:], true_near_field[:,1,1,:,:]).detach().cpu().numpy())
+            self.train_nf_1650_amp_diff.append(self.get_abs_difference(pred_nf_1650[:,1,0,:,:],
+                                                 true_nf_1650[:,1,0,:,:]).detach().cpu().numpy())
+            self.train_nf_1650_angle_diff.append(self.get_abs_difference(pred_nf_1650[:,1,1,:,:],
+                                                 true_nf_1650[:,1,1,:,:]).detach().cpu().numpy())
 
-            #self.train_ff_amp_diff.append(self.get_abs_difference(pred_far_field[:,0,:,:], true_far_field[:,1,0,:,:]).detach().cpu().numpy())
-            #self.train_ff_angle_diff.append(self.get_abs_difference(pred_far_field[:,1,:,:], true_far_field[:,1,1,:,:]).detach().cpu().numpy())
+            self.train_nf_1550_amp_diff.append(self.get_abs_difference(pred_nf_1550[:,1,0,:,:],
+                                                 true_nf_1550[:,1,0,:,:]).detach().cpu().numpy())
+            self.train_nf_1550_angle_diff.append(self.get_abs_difference(pred_nf_1550[:,1,1,:,:],
+                                                 true_nf_1550[:,1,1,:,:]).detach().cpu().numpy())
 
-            # resim
+            self.train_nf_1300_amp_diff.append(self.get_abs_difference(pred_nf_1300[:,1,0,:,:],
+                                                 true_nf_1300[:,1,0,:,:]).detach().cpu().numpy())
+            self.train_nf_1300_angle_diff.append(self.get_abs_difference(pred_nf_1300[:,1,1,:,:],
+                                                 true_nf_1300[:,1,1,:,:]).detach().cpu().numpy())
+
+            self.train_nf_1060_amp_diff.append(self.get_abs_difference(pred_nf_1060[:,1,0,:,:],
+                                                 true_nf_1060[:,1,0,:,:]).detach().cpu().numpy())
+            self.train_nf_1060_angle_diff.append(self.get_abs_difference(pred_nf_1060[:,1,1,:,:],
+                                                    true_nf_1060[:,1,1,:,:]).detach().cpu().numpy())
+            #resim
             if batch_idx == 0:
-                self.train_phase_pred_resim.append(pred_phase.detach().cpu().numpy())
-                self.train_phase_truth_resim.append(true_phase.detach().cpu().numpy())
+                self.train_phase_pred_resim.append(pred_phases.detach().cpu().numpy())
+                self.train_phase_truth_resim.append(true_phases.detach().cpu().numpy())
+                self.train_intensity_pred_resim.append(pred_intensities.detach().cpu().numpy())
+                self.train_intensity_truth_resim.append(true_intensities.detach().cpu().numpy())
 
-                self.train_nf_pred_resim.append(pred_near_field.detach().cpu().numpy())
-                self.train_nf_truth_resim.append(true_near_field[:,1,:,:,:].detach().cpu().numpy())
+                self.train_nf_2881_pred_resim.append(pred_nf_2881.detach().cpu().numpy())
+                self.train_nf_2881_truth_resim.append(true_nf_2881[:,1,:,:,:].detach().cpu().numpy())
+                
+                self.train_nf_1650_pred_resim.append(pred_nf_1650.detach().cpu().numpy())
+                self.train_nf_1650_truth_resim.append(true_nf_1650[:,1,:,:,:].detach().cpu().numpy())
 
-                #self.train_ff_pred_resim.append(pred_far_field.detach().cpu().numpy())
-                #self.train_ff_truth_resim.append(true_far_field[:,1,:,:,:].detach().cpu().numpy())
+                self.train_nf_1550_pred_resim.append(pred_nf_1550.detach().cpu().numpy())
+                self.train_nf_1550_truth_resim.append(true_nf_1550[:,1,:,:,:].detach().cpu().numpy())
+            
+                self.train_nf_1300_pred_resim.append(pred_nf_1300.detach().cpu().numpy())
+                self.train_nf_1300_truth_resim.append(true_nf_1300[:,1,:,:,:].detach().cpu().numpy())
+
+                self.train_nf_1060_pred_resim.append(pred_nf_1060.detach().cpu().numpy())
+                self.train_nf_1060_truth_resim.append(true_nf_1060[:,1,:,:,:].detach().cpu().numpy())
 
         else:
             exit()
@@ -441,6 +531,7 @@ class SurrogateModel(LightningModule):
         x_recon = self.seg_head(self.decoder(*x)) # MLP for final decison - takes output of the decoder and makes "classification" predictions. in our case, we're using it to give us amplitude and phase. we're co-opting a segmentation model to do this.
         # seg head gives us a weird shape: (batch, channel, width, head) - so we send it to our self.last()
         recon = self.last(x_recon) # gets reshaped
+        
         return [recon, phase, derivatives]
 
     def shared_step(self, batch, batch_idx): # training step, valid step, and testing all call this function. 
@@ -458,16 +549,17 @@ class SurrogateModel(LightningModule):
         all_nf = torch.cat((nf_2881, nf_1650, nf_1550, nf_1300, nf_1060), dim=1).to(self.device)
         shape = all_nf.shape
         all_nf_reshaped = all_nf.view(shape[0], shape[1]*shape[2]*shape[3], shape[4], shape[5]) 
+       
         outputs = self.forward(all_nf_reshaped)
         outputs[0] = outputs[0].view(shape) # reshaped back to same size as all_nf. now i can access components, frequencies, etc.
+
         return all_nf, outputs
-        #return pred_near_field, pred_phase, pred_derivatives, pred_source_flux
         
     def training_step(self, batch, batch_idx):
+        
         #Get predictions
         
         all_nf, predictions = self.shared_step(batch, batch_idx)
-
         #Calculate loss
         loss = self.objective(batch, predictions, all_nf)
         total_loss = loss['total_loss']
@@ -517,49 +609,96 @@ class SurrogateModel(LightningModule):
  
     def test_step(self, batch, batch_idx, dataloader_idx=0): # this lets us do evaluation
         #Get predictions
-        predictions = self.shared_step(batch, batch_idx) # grabs all preds from the dataloader
+        all_nf, predictions = self.shared_step(batch, batch_idx) # grabs all preds from the dataloader
+        
+        pred_nf, pred_phases, pred_derivatives = predictions[0], predictions[1], predictions[2] # only using pred_nf here so we can calculate pred_intensities. using predictions as a list.
+        pred_intensities = self.get_pred_intensities(pred_nf) 
+        predictions.append(pred_intensities) 
+
+        # predictions passed as a list. [0]: pred_nf, [1]: pred_phases, [2]: pred_derivatives, [3]: pred_intensities
         self.organize_testing(predictions, batch, batch_idx, dataloader_idx) # fills in those lists we defined above.
+        
 
     def on_test_end(self):         
-
+         
         # Encoder
         train_encoder = {
-            'phase_truth': np.concatenate(self.train_phase_truth),
-            'phase_pred' : np.concatenate(self.train_phase_predictions),
-            'deriv_truth': np.concatenate(self.train_deriv_truth),
-            'deriv_pred' : np.concatenate(self.train_deriv_predictions),
+            'phase_truth'     : np.concatenate(self.train_phase_truth),
+            'phase_pred'      : np.concatenate(self.train_phase_pred),
+            'deriv_truth'     : np.concatenate(self.train_deriv_truth),
+            'deriv_pred'      : np.concatenate(self.train_deriv_pred),
+            'intensity_truth' : np.concatenate(self.train_intensity_truth),
+            'intensity_pred'  : np.concatenate(self.train_intensity_pred),
             }
         val_encoder = {
-            'phase_truth': np.concatenate(self.val_phase_truth),
-            'phase_pred' : np.concatenate(self.val_phase_predictions),
-            'deriv_truth': np.concatenate(self.val_deriv_truth),
-            'deriv_pred' : np.concatenate(self.val_deriv_predictions),
+            'phase_truth'     : np.concatenate(self.val_phase_truth),
+            'phase_pred'      : np.concatenate(self.val_phase_pred),
+            'deriv_truth'     : np.concatenate(self.val_deriv_truth),
+            'deriv_pred'      : np.concatenate(self.val_deriv_pred),
+            'intensity_truth' : np.concatenate(self.val_intensity_truth),
+            'intensity_pred'  : np.concatenate(self.val_intensity_pred),
             }
 
         # Resim
         train_resim = {
-            'phase_pred'    : np.concatenate(self.train_phase_pred_resim),
-            'phase_truth'   : np.concatenate(self.train_phase_truth_resim),
-            'nf_pred'       : np.concatenate(self.train_nf_pred_resim),
-            'nf_truth'      : np.concatenate(self.train_nf_truth_resim),
-            #'ff_pred'       : np.concatenate(self.train_ff_pred_resim),
-            #'ff_truth'      : np.concatenate(self.train_ff_truth_resim), 
+            'phase_pred'        : np.concatenate(self.train_phase_pred_resim),
+            'phase_truth'       : np.concatenate(self.train_phase_truth_resim),
+            'intensity_pred'    : np.concatenate(self.train_intensity_pred_resim),
+            'intensity_truth'   : np.concatenate(self.train_intensity_truth_resim),
+            'nf_2881_pred'      : np.concatenate(self.train_nf_2881_pred_resim),
+            'nf_2881_truth'     : np.concatenate(self.train_nf_2881_truth_resim),
+            'nf_1650_pred'      : np.concatenate(self.train_nf_1650_pred_resim),
+            'nf_1650_truth'     : np.concatenate(self.train_nf_1650_truth_resim),
+            'nf_1550_pred'      : np.concatenate(self.train_nf_1550_pred_resim),
+            'nf_1550_truth'     : np.concatenate(self.train_nf_1550_truth_resim),
+            'nf_1300_pred'      : np.concatenate(self.train_nf_1300_pred_resim),
+            'nf_1300_truth'     : np.concatenate(self.train_nf_1300_truth_resim),
+            'nf_1060_pred'      : np.concatenate(self.train_nf_1060_pred_resim),
+            'nf_1060_truth'     : np.concatenate(self.train_nf_1060_truth_resim),
             }
 
         val_resim = {
-            'phase_pred'    : np.concatenate(self.val_phase_pred_resim),
-            'phase_truth'   : np.concatenate(self.val_phase_truth_resim),
-            'nf_pred'       : np.concatenate(self.val_nf_pred_resim),
-            'nf_truth'      : np.concatenate(self.val_nf_truth_resim),
+            'phase_pred'        : np.concatenate(self.val_phase_pred_resim),
+            'phase_truth'       : np.concatenate(self.val_phase_truth_resim),
+            'intensity_pred'    : np.concatenate(self.val_intensity_pred_resim),
+            'intensity_truth'   : np.concatenate(self.val_intensity_truth_resim),
+            'nf_2881_pred'      : np.concatenate(self.val_nf_2881_pred_resim),
+            'nf_2881_truth'     : np.concatenate(self.val_nf_2881_truth_resim),
+            'nf_1650_pred'      : np.concatenate(self.val_nf_1650_pred_resim),
+            'nf_1650_truth'     : np.concatenate(self.val_nf_1650_truth_resim),
+            'nf_1550_pred'      : np.concatenate(self.val_nf_1550_pred_resim),
+            'nf_1550_truth'     : np.concatenate(self.val_nf_1550_truth_resim),
+            'nf_1300_pred'      : np.concatenate(self.val_nf_1300_pred_resim),
+            'nf_1300_truth'     : np.concatenate(self.val_nf_1300_truth_resim),
+            'nf_1060_pred'      : np.concatenate(self.val_nf_1060_pred_resim),
+            'nf_1060_truth'     : np.concatenate(self.val_nf_1060_truth_resim),
             }
 
         train_recon = {
-            'nf_amp_diff'       : np.concatenate(self.train_nf_amp_diff),
-            'nf_angle_diff'     : np.concatenate(self.train_nf_angle_diff),
+            'nf_2881_amp_diff'       : np.concatenate(self.train_nf_2881_amp_diff),
+            'nf_2881_angle_diff'     : np.concatenate(self.train_nf_2881_angle_diff),
+            'nf_1650_amp_diff'       : np.concatenate(self.train_nf_1650_amp_diff),
+            'nf_1650_angle_diff'     : np.concatenate(self.train_nf_1650_angle_diff),
+            'nf_1550_amp_diff'       : np.concatenate(self.train_nf_1550_amp_diff),
+            'nf_1550_angle_diff'     : np.concatenate(self.train_nf_1550_angle_diff),
+            'nf_1300_amp_diff'       : np.concatenate(self.train_nf_1300_amp_diff),
+            'nf_1300_angle_diff'     : np.concatenate(self.train_nf_1300_angle_diff),
+            'nf_1060_amp_diff'       : np.concatenate(self.train_nf_1060_amp_diff),
+            'nf_1060_angle_diff'     : np.concatenate(self.train_nf_1060_angle_diff),
+
             }
         val_recon = {
-            'nf_amp_diff'       : np.concatenate(self.val_nf_amp_diff),
-            'nf_angle_diff'     : np.concatenate(self.val_nf_angle_diff),
+            'nf_2881_amp_diff'       : np.concatenate(self.val_nf_2881_amp_diff),
+            'nf_2881_angle_diff'     : np.concatenate(self.val_nf_2881_angle_diff),
+            'nf_1650_amp_diff'       : np.concatenate(self.val_nf_1650_amp_diff),
+            'nf_1650_angle_diff'     : np.concatenate(self.val_nf_1650_angle_diff),
+            'nf_1550_amp_diff'       : np.concatenate(self.val_nf_1550_amp_diff),
+            'nf_1550_angle_diff'     : np.concatenate(self.val_nf_1550_angle_diff),
+            'nf_1300_amp_diff'       : np.concatenate(self.val_nf_1300_amp_diff),
+            'nf_1300_angle_diff'     : np.concatenate(self.val_nf_1300_angle_diff),
+            'nf_1060_amp_diff'       : np.concatenate(self.val_nf_1060_amp_diff),
+            'nf_1060_angle_diff'     : np.concatenate(self.val_nf_1060_angle_diff),
+
             }        
         #log_results(self, results, epoch, mode, count = 5, name = None):       
         self.logger.experiment.log_results(results = train_encoder, epoch=None, count=5, mode = 'train', name='encoder')

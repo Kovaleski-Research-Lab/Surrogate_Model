@@ -7,23 +7,27 @@ resim : 0
 torch_home: '/develop/pretrained_models'
 seed: [True, 1337]
 train: True
-exp_name: 'new_data'
-model_id: 'new_data_2'
-prev_model_id: 'new_data_1'
+exp_name: 'baseline'
+model_id: 'baseline_3'
+prev_model_id: 'baseline_2'
 #torch_home: '~/.cache/torch/'
 
 #--------------------------------
 #       Training Params
 #--------------------------------
-batch_size: 8 
+batch_size: 16 
 num_epochs: 100
 
 mcl_params:
-    alpha: 1     # near-field
-    #beta: 1     # far-field
-    gamma: 0     # phase
+    gamma: 1     # phase
     delta: 0     # derivatives
-    epsilon: 1   # intensity - always on
+    epsilon: 1   # intensity 
+    alpha: 0     # near-field
+
+load_checkpoint: True # only False when doing first stage 
+freeze_encoder: False 
+ 
+transfer_learn: False
 
 initial_intensities :
     2881: 2.133954817261386e-05
@@ -31,10 +35,6 @@ initial_intensities :
     1550: 0.02579922487539837
     1300: 0.013293813343678174
     1060: 0.00015713650643846212
-
-transfer_learn: False
-load_checkpoint: True # only True when doing reconstruction (loads in a model from disk) 
-freeze_encoder: True 
 
 weights: 
 num_classes: 1

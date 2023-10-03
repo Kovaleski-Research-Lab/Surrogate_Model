@@ -26,5 +26,4 @@ if __name__ == '__main__':
         exit()
 
     params = yaml.load(open(args.config), Loader = yaml.FullLoader)
-   
     begin_experiment(params)
