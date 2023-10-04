@@ -6,6 +6,7 @@ import shutil
 from IPython import embed
 import yaml
 import meep as mp
+from mpi4py import MPI
 import pickle
 import numpy as np
 import argparse
@@ -13,12 +14,24 @@ import matplotlib.pyplot as plt
 
 import _3x3Pillars
 sys.path.append("../")
-from utils import parameter_manager
+from utils import parameter_manager, mapping
 
 def create_folder(path):
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
 
-    if(not(os.path.exists(path))):
-        os.makedirs(path)
+    print("creating folder")
+    if rank == 0:
+        if not os.path.exists(path):
+            os.makedirs(path)
+            print(f"created folder {path}")
+            time.sleep(2)
+        else:
+            pass
+
+    comm.Barrier()
+    if rank == 0:
+        time.sleep(2)
 
 def dump_geometry_image(model, pm):
     plt.figure()
@@ -110,33 +123,62 @@ def run(radii_list, index, pm, dataset=None):
         dump_data(index, data, pm) 
     else:
         eval_name = f"sample_{index}.pkl"
-        path_results = "/develop/results/spie_journal_2023"
-        path_resim = os.path.join(path_results, pm.exp_name + "_2", dataset + "_info") 
+        path_results = "/develop/results/spie_journal_2023/resim_results"
+        path_resim = os.path.join(path_results, pm.exp_name + "_2", dataset) 
+        create_folder(path_resim)
         filename = os.path.join(path_resim, eval_name)
-        with open(filename, "wb") as f:
-            pickle.dump(data, f)
+        f = open(filename, "wb")
+        pickle.dump(data, f)
 
     #dump_geometry_image(model, pm)
 if __name__=="__main__":
 
     # Run experiment
- 
+
     params = yaml.load(open('../config.yaml'), Loader = yaml.FullLoader).copy()
     pm = parameter_manager.ParameterManager(params=params)
+    pm.resim = 1
     print(f"resolution is {pm.resolution}")
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-index", type=int, help="The index matching the index in radii_neighbors")
-    parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to") # this is empty in our config file. gets set in the kubernetes job file
-       
-    args = parser.parse_args() 
-    idx = args.index
-    path_out_sims = args.path_out_sims
-    pm.path_dataset = path_out_sims
-    if(pm.resim == 0): # we are generating data.
+    if pm.resim == 0: # datagen
+        print("run_sim.py set to generate data")
+        parser.add_argument("-index", type=int, help="The index matching the index in radii_neighbors")
+        parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to") # this is empty in our config file. gets set in the kubernetes job file
+           
+        args = parser.parse_args() 
+
+        idx = args.index
+        path_out_sims = args.path_out_sims
+        pm.path_dataset = path_out_sims
+            
         neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
         radii_list = neighbors_library[idx]
         run(radii_list, idx, pm)
-         
-    else:
-        print("Set resim in config.yaml to 0 for data generation. Run resim.py to do a resim.")
+             
+
+    # RESIMS
+    elif pm.resim == 1:
+        print("run_sim.py set to do resims.")
+        parser = argparse.ArgumentParser()
+        parser.add_argument("-index", help="")       
+        parser.add_argument("-dataset", help="")       
+        args = parser.parse_args() 
+
+        #radii = radii_list.strip('[]').split(',')
+        #radii_list = [float(radius.strip()) for radius in radii]
+        idx = int(args.index)
+        dataset = args.dataset
+
+        path_results = "/develop/results/spie_journal_2023/resim_params"
+
+        # Need to get phase values from the model's predictions.
+        path_resims = os.path.join(path_results, pm.exp_name + '_3', dataset + '_info') # might need to change this too 
+        model_results = pickle.load(open(os.path.join(path_resims,'resim.pkl'), 'rb'))
+
+        phases = model_results['phase_pred'][idx]
+
+        radii_list = mapping.phase_to_radii(phases)
+        radii_list = np.round(radii_list, 6)
+        radii_list = list(radii_list)
+        
+        run(radii_list, idx, pm, dataset=dataset)
