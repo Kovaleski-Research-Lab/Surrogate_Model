@@ -1,0 +1,198 @@
+resim : 0 
+
+#--------------------------------
+#       General Params - ML
+#--------------------------------
+
+torch_home: '/develop/pretrained_models'
+seed: [True, 1337]
+train: True
+#exp_name: 'baseline'
+#model_id: 'baseline_3'
+#prev_model_id: 'baseline_2'
+exp_name: ''
+model_id: ''
+prev_model_id: ''
+#torch_home: '~/.cache/torch/'
+
+#--------------------------------
+#       Training Params
+#--------------------------------
+batch_size: 16 
+num_epochs: 1
+
+mcl_params:
+    gamma: 1     # phase
+    delta: 0     # derivatives
+    epsilon: 1   # intensity 
+    alpha: 0     # near-field
+
+load_checkpoint: False # only False when doing first stage 
+freeze_encoder: False 
+ 
+transfer_learn: False
+
+initial_intensities :
+    2881: 2.133954817261386e-05
+    1650: 0.020591382539901358
+    1550: 0.02579922487539837
+    1300: 0.013293813343678174
+    1060: 0.00015713650643846212
+
+weights: 
+num_classes: 1
+optimizer: 'ADAM'
+backbone: 'resnet18'
+learning_rate: 1.e-6
+objective_function: 'mse'
+
+accelerator: 'gpu' 
+gpu_config: [True, [0]]
+
+valid_rate: 1
+
+#--------------------------------
+#       All paths
+#--------------------------------
+#path_root: '/home/marshall/research/cai_2023'
+path_root: '/develop/'
+path_data: 'data/spie_journal_2023/kube_dataset/'
+# 
+path_results: 'results/spie_journal_2023/' #params.yaml, train and valid go here.
+path_train: 'train/'
+path_valid: 'valid/'
+path_resims: 'resims/'
+path_dataset: 
+
+#--------------------------------
+#       Physical Params
+#--------------------------------
+
+#Metasurface simulation
+#Nx_metaAtom: 3
+#Ny_metaAtom: 3
+#Lx_metaAtom: 680.e-9
+#Ly_metaAtom: 680.e-9
+#
+#h_pillar: 102.e-9
+#thickness_pml: 780.e-9
+#thickness_fusedSilica: 780.e-9
+#thickness_PDMS: 1560.e-9
+#
+##General
+#wavelength: 1550.e-9
+#
+##Fourier propagation
+#distance: 10.e-6
+Nxp: 166 # make this dynamic, put in parameter manager. it's data.shape
+Nyp: 166
+#Lxp: 2.04e-6
+#Lyp: 2.04e-6
+#adaptive: True
+data_shape:
+
+#--------------------------------
+#       Datamodule Params
+#--------------------------------
+which: 'CAI'
+n_cpus: 5
+source_wl : 1550
+
+#-------------------------------
+#   General Params - datagen
+#-------------------------------
+
+#------------------------
+#   Material Parameters
+#-------------------------
+
+n_fusedSilica : 1.44
+n_PDMS : 1.4
+n_amorphousSi : 3.48
+
+pml_thickness : 0.780
+height_pillar : 1.020
+radius :
+rad_min : 0.075
+rad_max : 0.250
+width_PDMS : 1.560
+width_fusedSilica : 0.780
+non_pml :
+
+center_PDMS :
+center_fusedSilica :
+center_pillar :
+
+z_fusedSilica :
+z_PDMS :
+x_dim :
+y_dim :
+geometry :
+
+#-----------------------
+#   Source Parameters
+#-----------------------
+
+wavelengths : [2.881, 1.650, 1.550, 1.300, 1.060]
+cen_wavelength : 1.55
+#wavelength_1550 : 1.55
+#wavelength_1300 : 1.30
+#wavelength_1060 : 1.06
+#wavelength_1650 : 1.65
+#wavelength_2881 : 2.881 
+fcen :
+#freq_1550 :
+#freq_1300 :
+#freq_1060 :
+#freq_1650 :
+#freq_2881 :
+fwidth :
+k_point :
+center_source :
+source_cmpt :
+source_type : "gaussian"
+source :
+cell_x :
+cell_y :
+cell_z :
+decay_rate : 0.0001
+dt : 50
+
+#------------------------
+#   Simulation Parameters
+#-------------------------
+
+#resolution : 80
+resolution : 10
+lattice_size : 0.680
+grid_size : 3 
+
+cell_x :
+cell_y :
+cell_z :
+cell_size :
+
+pml_layers :
+k_point :
+pml_layers :
+symmetries :
+
+#------------------------
+#   DFT Object Params
+#------------------------
+
+freq :
+nfreq : 1 
+freq_list :
+df : 0 
+mon_center :
+near_pt :
+near_vol :
+cs :
+
+#-----------------------
+#  Animation Params
+#----------------------
+
+plot_plane :
+fps : 20
