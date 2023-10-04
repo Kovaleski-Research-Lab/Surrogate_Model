@@ -371,7 +371,7 @@ class SurrogateModel(LightningModule):
         return torch.abs(prediction - label)
 
     def organize_testing(self, predictions, batch, batch_idx, dataloader): # this is part of those lists that has to be fixed.
-        
+         
         pred_nf, pred_phases, pred_derivatives, pred_intensities = predictions[0], predictions[1], predictions[2], predictions[3]
         
         pred_nf_2881, true_nf_2881 = pred_nf[:,0,:,:,:,:], batch['nf_2881']
@@ -501,7 +501,6 @@ class SurrogateModel(LightningModule):
 
                 self.train_nf_1060_pred_resim.append(pred_nf_1060.detach().cpu().numpy())
                 self.train_nf_1060_truth_resim.append(true_nf_1060[:,1,:,:,:].detach().cpu().numpy())
-
         else:
             exit()
 
