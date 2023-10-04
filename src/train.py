@@ -2,6 +2,7 @@
 # Import: Basic Python Libraries
 #--------------------------------
 
+from IPython import embed
 import os
 import yaml
 import torch
@@ -37,9 +38,10 @@ def run(params):
     # Initialize: The model
     model = model_loader.select_model(pm)
 
+    print("model initialized")
+
     # Initialize: The datamodule
     data = datamodule.select_data(pm.params_datamodule)
-    
     # Initialize: The logger
     logger = custom_logger.Logger(all_paths=pm.all_paths, name=pm.model_id, version=0)
 
@@ -55,6 +57,7 @@ def run(params):
     # Initialize: PytorchLightning Trainer
     if(pm.gpu_flag and torch.cuda.is_available()):
         logging.debug("Training with GPUs")
+        # pass detect_anomaly=True to check gradients
         trainer = Trainer(logger = logger, accelerator = "cuda", num_nodes = 1, 
                           check_val_every_n_epoch = pm.valid_rate, num_sanity_val_steps = 1,
                           devices = pm.gpu_list, max_epochs = pm.num_epochs, 
@@ -77,3 +80,22 @@ def run(params):
 
     # Dump config
     yaml.dump(params, open(os.path.join(pm.path_root, f'{pm.path_results}/params.yaml'),'w'))
+
+if __name__=="__main__":
+    import yaml
+    import torch
+    import argparse
+    import matplotlib.pyplot as plt
+    from utils import parameter_manager
+    from pytorch_lightning import seed_everything
+    logging.basicConfig(level=logging.ERROR)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-config", help = "Experiment: Train and Eval LRN Network")
+    args = parser.parse_args()
+    if(args.config == None):
+        logging.error("\nAttach Configuration File! Run experiment.py -h\n")
+        exit()
+
+    params = yaml.load(open(args.config), Loader = yaml.FullLoader)
+
+    run(params)

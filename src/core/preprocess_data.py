@@ -14,13 +14,11 @@ sys.path.append('../')
 from utils import parameter_manager
 from core import curvature
 
-
 def get_Bsplines():
 
     # these discrete  values were generated using a single pillar simulation with souce wavelength 1550 nm. 
     # the simulation was conducted using meep (FDTD) with PML in the z direction and Bloch periodic boundary conditions in x and y.
     # the results rely on the local phase approximation. 
-
     radii = [0.075, 0.0875, 0.1, 0.1125, 0.125, 0.1375, 0.15, 0.1625, 0.175, 0.1875, 0.2, 0.2125, 0.225, 0.2375, 0.25]
     phase_list = [-3.00185845, -2.89738421, -2.7389328, -2.54946247, -2.26906522, -1.89738599, -1.38868364, -0.78489682, -0.05167712, 0.63232107, 1.22268106, 1.6775137, 2.04169308, 2.34964137, 2.67187105]
     radii = np.asarray(radii)
@@ -44,7 +42,7 @@ def phase_to_radii(phases):
  
 # convert a value from micron location to pixel location in the cell. hard coded to the monitor
 # center
-def get_mon_slice(pm, data=None, eps_data=None, nf=None):
+def get_mon_slice(pm, data=None, eps_data=None, nf=None): # eps_data and nf are not assigned if we are preprocessing in batches.
 
     # put value on a (0 to pm.cell_z) scale - meep defines the cell on a (-cell_z/2 to cell_z/2) scale
     value = pm.mon_center
@@ -56,7 +54,7 @@ def get_mon_slice(pm, data=None, eps_data=None, nf=None):
 
     # length of the cell in pixels
     pix_min = 0   
-    if data is not None:
+    if data is not None: # hint: data is assigned if we are preprocessing in batches.
         pix_max = data['eps_data'].squeeze().shape[2]
     else:
         pix_max = eps_data.squeeze().shape[2]
@@ -71,12 +69,19 @@ def get_mon_slice(pm, data=None, eps_data=None, nf=None):
 
     return temp - pml_pix
 
-def get_transmission(Ex, Ey, Ez, pm):
-    print(Ex.shape)
+def get_intensity(Ex, Ey, Ez):
+
     E_0 = np.sqrt((abs(Ex)**2 + abs(Ey)**2 + abs(Ez)**2))
     I = 0.5 * E_0**2
-    mean = np.mean(I)
-    return(mean / pm.i_0)
+    I = torch.from_numpy(I)
+    return(torch.mean(I))
+
+#def get_transmission(Ex, Ey, Ez, pm):
+#    print(Ex.shape)
+#    E_0 = np.sqrt((abs(Ex)**2 + abs(Ey)**2 + abs(Ez)**2))
+#    I = 0.5 * E_0**2
+#    mean = np.mean(I)
+#    return(mean / pm.i_0)
 
 # we retired this function because it relies on a polynomial interpolation which is less accurate and far less reliable at the limit
 # than BSplines.
@@ -88,6 +93,15 @@ def get_transmission(Ex, Ey, Ez, pm):
 #    phases = torch.from_numpy(Polynomial(mapper)(radii.numpy()))
 #    phases =  torch.clamp(phases, min=-torch.pi, max=torch.pi)
 #    return phases
+
+def reconstruct_field(near_fields_mag, near_fields_angle):
+
+    complex_field = near_fields_mag * torch.exp(1j * near_fields_angle)
+    complex_field = complex_field.squeeze(dim=2)
+    components = torch.split(complex_field, 1, dim=1)
+    x_comp, y_comp, z_comp = components
+    x_comp, y_comp, z_comp = [tensor.squeeze(0).squeeze(0) for tensor in (x_comp, y_comp, z_comp)]
+    return x_comp, y_comp, z_comp 
 
 def preprocess_data(pm, kube, raw_data_files = None, path = None):
  
@@ -105,8 +119,8 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
     # the rest of the info can be stored in individual lists.
     
     eps_data = []
-    sim_times = []
-    transmissions = []
+    #sim_times = []
+    #intensities = []
     radii = []
     phases = []
     der = []
@@ -115,6 +129,7 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
         raw_data_files = os.listdir(path)
 
     count = 0
+    print("did we make it here?")
     #for f in raw_data_files:
     for f in tqdm(raw_data_files, desc="Preprocessing data"):
         if kube is True:
@@ -127,99 +142,89 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
             with open(filepath, "rb") as file:
                 data = pickle.load(file)
             print(f"got it: {file}")
+
+            count += 1
+            print(f"count = {count}, filename = {f}")
+            filename = f
+            # collect epsilon data, sim time, radii
+            eps_data = torch.from_numpy(np.asarray(data['eps_data']))
+            sim_time = torch.from_numpy(np.asarray(data['sim_time']))
+                                                                                                                              
+            radii = torch.from_numpy(np.asarray(data['radii'])).unsqueeze(dim=0)
+            # convert radii to phase and collect phase
+            #temp_phases = torch.from_numpy(radii_to_phase(radii[-1])) i used this to look at an already preprocessed dataset
+            temp_phases = torch.from_numpy(np.asarray(radii_to_phase(radii[-1])))
+            phases = temp_phases
+            
+            # calculate and collect derivatives
+            temp_der = curvature.get_der_train(temp_phases.view(1,3,3))
+            der = temp_der
+            
+            # organize near fields info by wavelength, get magnitude and phase info.
+            nf_dict = {
+                        'nf_1550': data['near_fields_1550'], # dft_fields = data['near_fields']
+                        'nf_1060': data['near_fields_1060'],
+                        'nf_1300': data['near_fields_1300'],
+                        'nf_1650': data['near_fields_1650'],
+                        'nf_2881': data['near_fields_2881'],
+                      } 
+            mon_slice = get_mon_slice(pm, data)
+            
+            for key, nf in nf_dict.items(): 
+                # nf['ex'], ['ey'], and ['ex'] have shape (x, y, z). Need to get the z slice
+                # corresponding to z = mon_center.
+                temp_nf_ex = nf['ex'][:,:,mon_slice]
+                temp_nf_ey = nf['ey'][:,:,mon_slice]
+                temp_nf_ez = nf['ez'][:,:,mon_slice] 
+                nf_ex = torch.from_numpy(temp_nf_ex).unsqueeze(dim=0)
+                nf_ey = torch.from_numpy(temp_nf_ey).unsqueeze(dim=0)
+                nf_ez = torch.from_numpy(temp_nf_ez).unsqueeze(dim=0)    
+                temp = torch.cat([nf_ex, nf_ey, nf_ez], dim=0).unsqueeze(dim=0) 
+                near_fields_mag = temp.abs().unsqueeze(dim=2) # contains mag of x, y, and z
+                near_fields_angle = temp.angle().unsqueeze(dim=2) # contains angle of x, y, and z
+                wl = ''.join(filter(str.isdigit, key))
+                all_near_fields[f'near_fields_{wl}'] = torch.cat((near_fields_mag, near_fields_angle), dim=2)
+                                                                                                                              
+                # note: intensities are set in datamodule.py
+            data = {'all_near_fields' : all_near_fields,    
+                    'radii' : radii, 
+                    'phases' : phases,                                                                                                   
+                    'derivatives' : der,
+#                    'sim_times' : sim_times,
+                    }
+            if kube is True:
+                path_save = '/develop/results/preprocessed' #KUBE
+            else:
+                path_save = '/develop/data/spie_journal_2023/kube_dataset/preprocessed'
+                
+            pkl_file_path = os.path.join(path_save, filename)
+            with open(pkl_file_path, "wb") as file:
+                pickle.dump(data, file)
+            print(filename + " dumped to preprocess folder.")
+
         except FileNotFoundError:
             print("pickle error: file not found")
         except pickle.PickleError:
             print("pickle error: pickle file error")
         except Exception as e:
             print("Some other error: ", e)
-        print("raw data file")
-        count += 1
-        print(f"count = {count} file = {f}")
-
-        # collect epsilon data, sim time, transmission, radii
-        eps_data.append(torch.from_numpy(np.asarray(data['eps_data'])))
-        sim_times.append(torch.from_numpy(np.asarray(data['sim_time'])))
-
-        radii.append(torch.from_numpy(np.asarray(data['radii'])).unsqueeze(dim=0))
-        # convert radii to phase and collect phase
-        #temp_phases = torch.from_numpy(radii_to_phase(radii[-1])) i used this to look at an already preprocessed dataset
-        temp_phases = torch.from_numpy(np.asarray(radii_to_phase(radii[-1])))
-        phases.append(temp_phases)
-        
-        # calculate and collect derivatives
-        temp_der = curvature.get_der_train(temp_phases.view(1,3,3))
-        der.append(temp_der)
-        
-        # organize near fields info by wavelength, get magnitude 
-        # and phase info.
-        nf_dict = {
-                    'nf_1550': data['near_fields_1550'], # dft_fields = data['near_fields']
-                    'nf_1060': data['near_fields_1060'],
-                    'nf_1300': data['near_fields_1300'],
-                    'nf_1650': data['near_fields_1650'],
-                    'nf_2881': data['near_fields_2881'],
-                  } 
-        mon_slice = get_mon_slice(pm, data)
-        
-        transmission = get_transmission(nf_dict['nf_1550']['ex'][:,:,mon_slice],
-                                        nf_dict['nf_1550']['ey'][:,:,mon_slice],
-                                        nf_dict['nf_1550']['ez'][:,:,mon_slice], pm)
-        transmissions.append(torch.from_numpy(np.asarray(transmission)))
-
-        for key, nf in nf_dict.items(): 
-            # nf['ex'], ['ey'], and ['ex'] have shape (x, y, z). Need to get the z slice
-            # corresponding to z = mon_center.
-            nf_ex = nf['ex'][:,:,mon_slice]
-            nf_ey = nf['ey'][:,:,mon_slice]
-            nf_ez = nf['ez'][:,:,mon_slice] 
-            nf_ex = torch.from_numpy(nf_ex).unsqueeze(dim=0)
-            nf_ey = torch.from_numpy(nf_ey).unsqueeze(dim=0)
-            nf_ez = torch.from_numpy(nf_ez).unsqueeze(dim=0)    
-            temp = torch.cat([nf_ex, nf_ey, nf_ez], dim=0).unsqueeze(dim=0)
-            near_fields_mag = temp.abs().unsqueeze(dim=2)
-            near_fields_angle = temp.angle().unsqueeze(dim=2)
-            wl = ''.join(filter(str.isdigit, key))
-            all_near_fields[f'near_fields_{wl}'].append(torch.cat((near_fields_mag, near_fields_angle), dim=2))
+    print(count + " files preprocessed successfully.")
     
-    for key, nf in all_near_fields.items():
-        nf = torch.cat(nf, dim=0).float()
-    eps_data = torch.cat(eps_data, dim=0).float()
-    radii = torch.cat(radii, dim=0).float()
-    phases = torch.cat(phases, dim=0).float()
-    der = torch.stack(der).float()
-
-    data = {'all_near_fields' : all_near_fields,    
-            'transmissions' : transmissions,
-            'radii' : radii, 
-            'phases' : phases,
-            'derivatives' : der,
-            'sim_times' : sim_times,
-            }
-
-    print("just compiled dictionary")
-
-    embed(); exit()
-    if kube is True:
-        path_save = '/develop/results/preprocessed' #KUBE
-    else:
-        path_save = '/develop/data/spie_journal_2023/testing_new_dataset'
-    torch.save(data, os.path.join(path_save, 'pp_dataset.pt'))
-
 if __name__=="__main__":
     params = yaml.load(open('../config.yaml'), Loader = yaml.FullLoader).copy()
     pm = parameter_manager.ParameterManager(params=params)
 
-    kube = False
+    kube = True 
     if kube is True:
         folder = os.listdir('/develop/results') # KUBE
     else:
-        folder = os.listdir('/develop/data/spie_journal_2023/kube_dataset')
+        folder = os.listdir('/develop/data/spie_journal_2023/kube_dataset') # LOCAL MARGE
 
     raw_data_files = []
     for filename in folder:
         if filename.endswith(".pkl"):
             raw_data_files.append(filename)
+    
     print(f'\nNumber of files to process: {len(raw_data_files)}')
     print(" ")
     preprocess_data(pm, kube, raw_data_files = raw_data_files)

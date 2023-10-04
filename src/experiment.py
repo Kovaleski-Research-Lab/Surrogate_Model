@@ -12,7 +12,6 @@ from math import log10, floor
 def round_sig(x, sig=2):
     return round(x, sig-int(floor(log10(abs(x))))-1)
 
-
 def begin_experiment(params):
     os.environ['TORCH_HOME'] = params['torch_home']
     train.run(params)
@@ -27,5 +26,4 @@ if __name__ == '__main__':
         exit()
 
     params = yaml.load(open(args.config), Loader = yaml.FullLoader)
-   
     begin_experiment(params)

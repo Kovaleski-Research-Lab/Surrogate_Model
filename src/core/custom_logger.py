@@ -69,7 +69,7 @@ class Writer:
             path = self.path_train
         else:
             path = self.path_valid
-
+        
         path_save = os.path.join(path, name)
         pickle.dump(results, open(path_save, "wb"))
 

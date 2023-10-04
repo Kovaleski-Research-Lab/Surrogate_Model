@@ -64,10 +64,6 @@ class _3x3PillarSim():
  
     def build_dft_mon(self, params):
 
-        #cs = [mp.Ex, mp.Ey, mp.Ez]
-        #freq = params['freq_list']
-        #where = params['near_vol']
-         
         self.monitor = self.sim.add_dft_fields(params['cs'], params['freq_list'], where=params['near_vol'])
 
     def reset_field_info(self):
@@ -81,8 +77,9 @@ class _3x3PillarSim():
     def collect_field_info(self):
      
         # the third parameter (type=int) takes the index of params['freq_list']
-        # params['freq_list'] is set in parameter_manager.calculate_dependencies()
-        # and looks like: [freq_2881, freq_1650, freq_1550, freq_1300, freq_1060] 
+        # which is set in parameter_manager.calculate_dependencies()
+        # self.freq_list = [ 1 / wl for wl in self.wavelengths]
+        # where wavelengths = [2.881, 1.650, 1.550, 1.300, 1.060] in the config file
         self.dft_field_ex_2881 = self.sim.get_dft_array(self.monitor, mp.Ex, 0)
         self.dft_field_ey_2881 = self.sim.get_dft_array(self.monitor, mp.Ey, 0)
         self.dft_field_ez_2881 = self.sim.get_dft_array(self.monitor, mp.Ez, 0)
@@ -136,7 +133,7 @@ class _3x3PillarSim():
         if params['source_type'] == "gaussian":
             until_after_sources = mp.stop_when_fields_decayed(dt=50,
                                                         c=params['source_cmpt'],
-                                                        pt=mp.Vector3(0, 0, params['fr_center']),
+                                                        pt=mp.Vector3(0, 0, params['mon_center']),
                                                         decay_by=params['decay_rate'])
 
             self.sim.run(mp.at_every(0.1, Animate), until=50)    
