@@ -1,9 +1,11 @@
 import os 
+import time
 import yaml
 import torch
 import logging
 import argparse
 import numpy as np
+from IPython import embed
 
 import train
 from math import log10, floor
@@ -24,6 +26,10 @@ if __name__ == '__main__':
     if(args.config == None):
         logging.error("\nAttach Configuration File! Run experiment.py -h\n")
         exit()
-
     params = yaml.load(open(args.config), Loader = yaml.FullLoader)
+    start_time = time.time()
     begin_experiment(params)
+    end_time = time.time()
+    elapsed_time = (end_time - start_time) / 60
+    print(f"elapsed time: {elapsed_time} minutes")
+

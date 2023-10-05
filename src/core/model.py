@@ -109,9 +109,10 @@ class SurrogateModel(LightningModule):
     def constrain_phase(self, phase): 
     
         #return (torch.sin(phase) * torch.pi).to(dtype=torch.float64)  # first we constrain it by sin which is periodic
-        return (torch.sin(phase) * torch.pi)  # first we constrain it by sin which is periodic
+        #return (torch.sin(phase) * torch.pi)  # first we constrain it by sin which is periodic
                                              # then we mult by pi to scale it
-       
+       return phase
+
     def select_model(self):
 
         #Model
@@ -186,7 +187,7 @@ class SurrogateModel(LightningModule):
             loss = fn(preds, labels)
 
         elif(choice == 1):
-            fn = PeakSignalNoiseRatio()
+            fn = PeakSignalNoiseRatio().to(self.device)
             loss = 1 / (1 + fn(preds, labels))
 
         elif(choice == 2): # this is thermo loss 

@@ -7,24 +7,22 @@ resim : 0
 torch_home: '/develop/pretrained_models'
 seed: [True, 1337]
 train: True
-#exp_name: 'baseline'
-#model_id: 'baseline_3'
-#prev_model_id: 'baseline_2'
-exp_name: ''
-model_id: ''
-prev_model_id: ''
+model_id: "baseline_1_nockpt"
+
+exp_name: 
+prev_model_id:
 #torch_home: '~/.cache/torch/'
 
 #--------------------------------
 #       Training Params
 #--------------------------------
 batch_size: 16 
-num_epochs: 1
+num_epochs: 100 
 
 mcl_params:
-    gamma: 1     # phase
-    delta: 0     # derivatives
-    epsilon: 1   # intensity 
+    gamma: 0     # phase
+    delta: 1     # derivatives
+    epsilon: 0   # intensity 
     alpha: 0     # near-field
 
 load_checkpoint: False # only False when doing first stage 

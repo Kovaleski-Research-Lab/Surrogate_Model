@@ -174,7 +174,24 @@ class ParameterManager():
             logging.error(e)
             traceback.print_exc()
             sys.exit()
-    
+
+    def get_prev_name(self, name):
+        try:
+            number = int(name.split('_')[1])
+        except (IndexError, ValueError):
+            return None
+
+        # Calculate prev_name based on the numeric part of name
+        prev_number = number - 1
+        if prev_number < 0:
+            print("First stage of training. load_checkpoint must be false: {pm.load_checkpoint}")
+            return ""
+ 
+        # Construct prev_name
+        prev_name = f"{self.exp_name}_{prev_number}"
+
+        return prev_name
+
     def calculate_dependencies(self):
         
         self.cell_z = (round(2 * self.pml_thickness + self.width_PDMS + self.height_pillar + 
@@ -221,6 +238,8 @@ class ParameterManager():
         #self.freq_list = [self.freq_2881, self.freq_1650, self.freq_1550, self.freq_1300, self.freq_1060]
         self.cs = [mp.Ex, mp.Ey, mp.Ez]
         self._data_shape = [1, 30, self.Nxp, self.Nyp]
+        self.exp_name = self.model_id.split('_')[0]
+        self.prev_model_id = self.get_prev_name(self.model_id) 
         self.collect_params()    
 
     def collect_params(self):
