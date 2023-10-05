@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import _3x3Pillars
 sys.path.append("../")
 from utils import parameter_manager, mapping
+from core import preprocess_data
 
 def create_folder(path):
     comm = MPI.COMM_WORLD
@@ -121,16 +122,18 @@ def run(radii_list, index, pm, dataset=None):
     
     if(pm.resim == 0):
         dump_data(index, data, pm) 
-    else:
-        eval_name = f"sample_{index}.pkl"
+    elif(pm.resim == 1):
+        eval_name = f"sample_{index}_preprocessed.pkl"
         path_results = "/develop/results/spie_journal_2023/resim_results"
         path_resim = os.path.join(path_results, pm.exp_name + pm.training_stage, dataset) 
         create_folder(path_resim)
-        filename = os.path.join(path_resim, eval_name)
-        f = open(filename, "wb")
-        pickle.dump(data, f)
 
-    #dump_geometry_image(model, pm)
+        # let's preprocess the data so we don't have such a big file to transfer
+        preprocessed_data = preprocess_data.preprocess(pm, data)
+        filename = os.path.join(path_resim, eval_name) 
+        f = open(filename, "wb")
+        pickle.dump(data, f) 
+
 if __name__=="__main__":
 
     # Run experiment

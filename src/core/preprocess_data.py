@@ -103,15 +103,7 @@ def reconstruct_field(near_fields_mag, near_fields_angle):
     x_comp, y_comp, z_comp = [tensor.squeeze(0).squeeze(0) for tensor in (x_comp, y_comp, z_comp)]
     return x_comp, y_comp, z_comp 
 
-def preprocess_data(pm, kube, raw_data_files = None, path = None):
- 
-    if (kube is True):
-        params = yaml.load(open('/develop/code/src/config.yaml', 'r'), #KUBE
-                                        Loader = yaml.FullLoader)
-    else:
-        params = yaml.load(open('/develop/code/surrogate_model/src/config.yaml', 'r'), # LOCAL MARGE
-                                    Loader = yaml.FullLoader)
-    
+def preprocess(pm, data, filename=None, kube=False):
     # make a dictionary of lists: one list for each source wavelength.
     wavelengths = ['1550', '1060', '1300', '1650', '2881']
     all_near_fields = {f'near_fields_{wl}': [] for wl in wavelengths}
@@ -125,11 +117,84 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
     phases = []
     der = []
 
+    # collect epsilon data, sim time, radii
+    eps_data = torch.from_numpy(np.asarray(data['eps_data']))
+    sim_time = torch.from_numpy(np.asarray(data['sim_time']))
+                                                                                                                      
+    radii = torch.from_numpy(np.asarray(data['radii'])).unsqueeze(dim=0)
+    # convert radii to phase and collect phase
+    #temp_phases = torch.from_numpy(radii_to_phase(radii[-1])) i used this to look at an already preprocessed dataset
+    temp_phases = torch.from_numpy(np.asarray(radii_to_phase(radii[-1])))
+    phases = temp_phases
+    
+    # calculate and collect derivatives
+    temp_der = curvature.get_der_train(temp_phases.view(1,3,3))
+    der = temp_der
+    
+    # organize near fields info by wavelength, get magnitude and phase info.
+    nf_dict = {
+                'nf_1550': data['near_fields_1550'], # dft_fields = data['near_fields']
+                'nf_1060': data['near_fields_1060'],
+                'nf_1300': data['near_fields_1300'],
+                'nf_1650': data['near_fields_1650'],
+                'nf_2881': data['near_fields_2881'],
+              } 
+    mon_slice = get_mon_slice(pm, data)
+    
+    for key, nf in nf_dict.items(): 
+        # nf['ex'], ['ey'], and ['ex'] have shape (x, y, z). Need to get the z slice
+        # corresponding to z = mon_center.
+        temp_nf_ex = nf['ex'][:,:,mon_slice]
+        temp_nf_ey = nf['ey'][:,:,mon_slice]
+        temp_nf_ez = nf['ez'][:,:,mon_slice] 
+        nf_ex = torch.from_numpy(temp_nf_ex).unsqueeze(dim=0)
+        nf_ey = torch.from_numpy(temp_nf_ey).unsqueeze(dim=0)
+        nf_ez = torch.from_numpy(temp_nf_ez).unsqueeze(dim=0)    
+        temp = torch.cat([nf_ex, nf_ey, nf_ez], dim=0).unsqueeze(dim=0) 
+        near_fields_mag = temp.abs().unsqueeze(dim=2) # contains mag of x, y, and z
+        near_fields_angle = temp.angle().unsqueeze(dim=2) # contains angle of x, y, and z
+        wl = ''.join(filter(str.isdigit, key))
+        all_near_fields[f'near_fields_{wl}'] = torch.cat((near_fields_mag, near_fields_angle), dim=2)
+                                                                                                                      
+        # note: intensities are set in datamodule.py
+    data = {'all_near_fields' : all_near_fields,    
+            'radii' : radii, 
+            'phases' : phases,                                                                                                   
+            'derivatives' : der,
+            #'sim_times' : sim_times,
+            }
+    if kube is True:
+        path_save = '/develop/results/preprocessed' #KUBE
+        pkl_file_path = os.path.join(path_save, filename)
+        with open(pkl_file_path, "wb") as f:
+            pickle.dump(data, f)
+            print(filename + " dumped to preprocess folder.")
+                                                                                                                                  
+    else: # if kube is false we are either testing locally (on marge) or we're preprocessing a resim.
+        # case 1: testing locally
+        if pm.resim == 0: 
+            path_save = '/develop/data/spie_journal_2023/kube_dataset/preprocessed'
+            pkl_file_path = os.path.join(path_save, filename)
+            with open(pkl_file_path, "wb") as f:
+                pickle.dump(data, f)
+                print(filename + " dumped to preprocess folder.")
+        # case 2: doing a resim
+        elif pm.resim == 1:
+            return data
+
+def preprocess_data(pm, kube, raw_data_files = None, path = None):
+ 
+    if (kube is True):
+        params = yaml.load(open('/develop/code/src/config.yaml', 'r'), #KUBE
+                                        Loader = yaml.FullLoader)
+    else:
+        params = yaml.load(open('/develop/code/surrogate_model/src/config.yaml', 'r'), # LOCAL MARGE
+                                    Loader = yaml.FullLoader)
+    
     if raw_data_files is None:
         raw_data_files = os.listdir(path)
 
     count = 0
-    print("did we make it here?")
     #for f in raw_data_files:
     for f in tqdm(raw_data_files, desc="Preprocessing data"):
         if kube is True:
@@ -146,62 +211,9 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
             count += 1
             print(f"count = {count}, filename = {f}")
             filename = f
-            # collect epsilon data, sim time, radii
-            eps_data = torch.from_numpy(np.asarray(data['eps_data']))
-            sim_time = torch.from_numpy(np.asarray(data['sim_time']))
-                                                                                                                              
-            radii = torch.from_numpy(np.asarray(data['radii'])).unsqueeze(dim=0)
-            # convert radii to phase and collect phase
-            #temp_phases = torch.from_numpy(radii_to_phase(radii[-1])) i used this to look at an already preprocessed dataset
-            temp_phases = torch.from_numpy(np.asarray(radii_to_phase(radii[-1])))
-            phases = temp_phases
             
-            # calculate and collect derivatives
-            temp_der = curvature.get_der_train(temp_phases.view(1,3,3))
-            der = temp_der
+            preprocess(pm, data, filename, kube=kube) 
             
-            # organize near fields info by wavelength, get magnitude and phase info.
-            nf_dict = {
-                        'nf_1550': data['near_fields_1550'], # dft_fields = data['near_fields']
-                        'nf_1060': data['near_fields_1060'],
-                        'nf_1300': data['near_fields_1300'],
-                        'nf_1650': data['near_fields_1650'],
-                        'nf_2881': data['near_fields_2881'],
-                      } 
-            mon_slice = get_mon_slice(pm, data)
-            
-            for key, nf in nf_dict.items(): 
-                # nf['ex'], ['ey'], and ['ex'] have shape (x, y, z). Need to get the z slice
-                # corresponding to z = mon_center.
-                temp_nf_ex = nf['ex'][:,:,mon_slice]
-                temp_nf_ey = nf['ey'][:,:,mon_slice]
-                temp_nf_ez = nf['ez'][:,:,mon_slice] 
-                nf_ex = torch.from_numpy(temp_nf_ex).unsqueeze(dim=0)
-                nf_ey = torch.from_numpy(temp_nf_ey).unsqueeze(dim=0)
-                nf_ez = torch.from_numpy(temp_nf_ez).unsqueeze(dim=0)    
-                temp = torch.cat([nf_ex, nf_ey, nf_ez], dim=0).unsqueeze(dim=0) 
-                near_fields_mag = temp.abs().unsqueeze(dim=2) # contains mag of x, y, and z
-                near_fields_angle = temp.angle().unsqueeze(dim=2) # contains angle of x, y, and z
-                wl = ''.join(filter(str.isdigit, key))
-                all_near_fields[f'near_fields_{wl}'] = torch.cat((near_fields_mag, near_fields_angle), dim=2)
-                                                                                                                              
-                # note: intensities are set in datamodule.py
-            data = {'all_near_fields' : all_near_fields,    
-                    'radii' : radii, 
-                    'phases' : phases,                                                                                                   
-                    'derivatives' : der,
-#                    'sim_times' : sim_times,
-                    }
-            if kube is True:
-                path_save = '/develop/results/preprocessed' #KUBE
-            else:
-                path_save = '/develop/data/spie_journal_2023/kube_dataset/preprocessed'
-                
-            pkl_file_path = os.path.join(path_save, filename)
-            with open(pkl_file_path, "wb") as file:
-                pickle.dump(data, file)
-            print(filename + " dumped to preprocess folder.")
-
         except FileNotFoundError:
             print("pickle error: file not found")
         except pickle.PickleError:
