@@ -49,6 +49,7 @@ class ParameterManager():
     def parse_params(self, params):
         try:
             self._resim = params['resim']
+            self._training_stage = params['training_stage']
             # ML params first:
             # Load: Paths 
             self.path_root = params['path_root']
@@ -353,6 +354,7 @@ class ParameterManager():
         self._all_params =  {
                             # datagen params:
                             'resim'                 : self._resim,
+                            'training_stage'        : self._training_stage,
                             'geometry_params'       : self._geometry_params,
                             'source_params'         : self._source_params,
                             'sim_params'            : self._sim_params,
@@ -364,7 +366,15 @@ class ParameterManager():
                             'all_paths'             : self._all_paths
 
                             }                   
-    
+    @property
+    def training_stage(self):
+        return self._training_stage
+
+    @training_stage.setter
+    def training_stage(self, value):
+        self._training_stage = value
+        self.calculate_dependencies()
+
     @property
     def resim(self):
         return self._resim

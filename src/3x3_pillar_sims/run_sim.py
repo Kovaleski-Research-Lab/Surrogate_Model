@@ -124,7 +124,7 @@ def run(radii_list, index, pm, dataset=None):
     else:
         eval_name = f"sample_{index}.pkl"
         path_results = "/develop/results/spie_journal_2023/resim_results"
-        path_resim = os.path.join(path_results, pm.exp_name + "_2", dataset) 
+        path_resim = os.path.join(path_results, pm.exp_name + pm.training_stage, dataset) 
         create_folder(path_resim)
         filename = os.path.join(path_resim, eval_name)
         f = open(filename, "wb")
@@ -138,6 +138,7 @@ if __name__=="__main__":
     params = yaml.load(open('../config.yaml'), Loader = yaml.FullLoader).copy()
     pm = parameter_manager.ParameterManager(params=params)
     pm.resim = 1
+    pm.exp_name = "baseline_3"
     print(f"resolution is {pm.resolution}")
 
     if pm.resim == 0: # datagen
@@ -159,6 +160,10 @@ if __name__=="__main__":
     # RESIMS
     elif pm.resim == 1:
         print("run_sim.py set to do resims.")
+    
+        pm.training_stage = "_3"
+        pm.exp_name = "baseline"
+        
         parser = argparse.ArgumentParser()
         parser.add_argument("-index", help="")       
         parser.add_argument("-dataset", help="")       
@@ -172,7 +177,7 @@ if __name__=="__main__":
         path_results = "/develop/results/spie_journal_2023/resim_params"
 
         # Need to get phase values from the model's predictions.
-        path_resims = os.path.join(path_results, pm.exp_name + '_3', dataset + '_info') # might need to change this too 
+        path_resims = os.path.join(path_results, pm.exp_name + pm.training_stage, dataset + '_info') # might need to change this too 
         model_results = pickle.load(open(os.path.join(path_resims,'resim.pkl'), 'rb'))
 
         phases = model_results['phase_pred'][idx]
