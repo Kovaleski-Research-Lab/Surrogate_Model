@@ -244,7 +244,7 @@ def plot_loss(loss_0, loss_1, loss_2, loss_3, title, rect=[0,0,0.98,1], save_fig
     ax[3].plot(x_vals, y_vals, label=labels[1] + " z", c=colors[1], linestyle=linestyles[2])
     ax[3].legend(loc='upper left', bbox_to_anchor=(1,1))
 
-    lims = [6, 8, 0.3, 5]
+    lims = [6, 9, 0.3, 5]
     for a, lterm, lim in zip(ax, lterms, lims):
         a.set_xlabel("Epoch")
         a.set_ylabel("Loss")
@@ -364,77 +364,35 @@ def get_r_squared(x, y):
 
     return r_squared
 
-def get_regression_plots(phase_train_results, phase_valid_results, der_train_results, der_valid_results, title, save_fig=False):
+def plot_scatter(ax, truth, pred, title, x_label, y_label):
 
-    plt.style.use('ggplot')
-    
-    linewidth=3
     scatter_color = "mediumseagreen"
-    #line_color = "#80004C"
     line_color = "black"
+    linewidth=3
     an_fontsize = 12.5
     bbox = dict(boxstyle='round', facecolor='white', edgecolor='black')
-    
-    train_phase_truth = phase_train_results['phase_truth'].flatten()
-    train_phase_pred = phase_train_results['phase_pred'].flatten()
-    train_der_truth = der_train_results['deriv_truth'].flatten()
-    train_der_pred = der_train_results['deriv_pred'].flatten()
-    
-    valid_phase_truth = phase_valid_results['phase_truth'].flatten()
-    valid_phase_pred = phase_valid_results['phase_pred'].flatten()
-    valid_der_truth = der_valid_results['deriv_truth'].flatten()
-    valid_der_pred = der_valid_results['deriv_pred'].flatten()
 
-    r_sq = get_r_squared(train_phase_truth, train_phase_pred)
-    x = np.linspace(-np.pi, np.pi, 100)
-    y = x
+    r_sq = get_r_squared(truth, pred)
+    ax.scatter(truth, pred, c=colors[1])
+    ax.plot([-max(truth), max(truth)], [-max(truth), max(truth)], c=scatter_color, linewidth=linewidth)
+    ax.set_title(title)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.annotate(f"$R^2$: {r_sq:.2f}", (-max(truth), max(truth)), fontsize=an_fontsize, bbox=bbox)
+    ax.grid(color='black')
+    ax.set_facecolor('white')
+
+def regression_plots(title, phase_train_truth, phase_train_pred, phase_valid_truth, phase_valid_pred, der_train_truth, der_train_pred, der_valid_truth, der_valid_pred, save_fig=False):
     
-    fig, ax = plt.subplots(2, 2, figsize = (9,6))
+    x_values = np.linspace(-np.pi, np.pi, 100)
+    
+    fig, ax = plt.subplots(2, 2, figsize=(9, 6))
     fig.suptitle(f"{title}")
     
-    ax[0, 0].scatter(train_phase_truth, train_phase_pred, c=colors[1])
-    ax[0, 0].plot(x,y, c=scatter_color, linewidth=linewidth)
-    ax[0, 0].set_title("Train Dataset")
-    ax[0, 0].set_xlabel("Truth Phases")
-    ax[0, 0].set_ylabel("Pred Phases")
-    ax[0, 0].annotate(f"$R^2$: {r_sq: .2f}", (-3, 2), fontsize=an_fontsize, bbox= bbox)
-    ax[0, 0].grid(color='black')
-    ax[0, 0].set_facecolor('white')
-    
-    r_sq = get_r_squared(valid_phase_truth, valid_phase_pred)
-
-    ax[0, 1].scatter(valid_phase_truth, valid_phase_pred, c= colors[1])
-    ax[0, 1].plot(x,y, c=scatter_color,linewidth=linewidth)
-    ax[0, 1].set_title("Valid Dataset")
-    ax[0, 1].set_xlabel("Truth Phases")
-    ax[0, 1].set_ylabel("Pred Phases")
-    ax[0, 1].annotate(f"$R^2$: {r_sq: .2f}", (-2.1, 2.5),zorder=1, fontsize=an_fontsize, bbox= bbox)
-    ax[0, 1].grid(color='black')
-    ax[0, 1].set_facecolor('white')
-    
-    r_sq = get_r_squared(train_der_truth, train_der_pred)
-    x = np.linspace(-12, 12, 100)
-    y = x
-
-    ax[1, 0].scatter(train_der_truth, train_der_pred, c = colors[1])
-    ax[1, 0].plot(x,y, c = scatter_color, linewidth=linewidth)
-    ax[1, 0].set_title("Train Dataset")
-    ax[1, 0].set_xlabel("Truth Derivatives")
-    ax[1, 0].set_ylabel("Pred Derivatives")
-    ax[1, 0].annotate(f"$R^2$: {r_sq: .2f}", (-10, 5), fontsize=an_fontsize, bbox= bbox)
-    ax[1, 0].grid(color='black')
-    ax[1, 0].set_facecolor('white')
-
-    r_sq = get_r_squared(valid_der_truth, valid_der_pred)
-    
-    ax[1, 1].scatter(valid_der_truth, valid_der_pred, c = colors[1])
-    ax[1, 1].plot(x, y, c = scatter_color, linewidth=linewidth)
-    ax[1, 1].set_title("Valid Dataset")
-    ax[1, 1].set_xlabel("Truth Derivatives")
-    ax[1, 1].set_ylabel("Pred Derivatives")   
-    ax[1, 1].annotate(f"$R^2$: {r_sq: .2f}", (-10, 5), fontsize=an_fontsize, bbox= bbox)
-    ax[1, 1].grid(color='black')
-    ax[1, 1].set_facecolor('white')
+    plot_scatter(ax[0, 0], phase_train_truth, phase_train_pred, "Train Dataset", "Truth Phases", "Pred Phases")
+    plot_scatter(ax[0, 1], phase_valid_truth, phase_valid_pred, "Valid Dataset", "Truth Phases", "Pred Phases")
+    plot_scatter(ax[1, 0], der_train_truth, der_train_pred, "Train Dataset", "Truth Derivatives", "Pred Derivatives")
+    plot_scatter(ax[1, 1], der_valid_truth, der_valid_pred, "Valid Dataset", "Truth Derivatives", "Pred Derivatives")
     
     fig.set_facecolor('white')
     fig.tight_layout()
