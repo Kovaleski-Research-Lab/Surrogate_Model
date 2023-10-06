@@ -132,7 +132,7 @@ def run(radii_list, index, pm, dataset=None):
         preprocessed_data = preprocess_data.preprocess(pm, data)
         filename = os.path.join(path_resim, eval_name) 
         f = open(filename, "wb")
-        pickle.dump(data, f) 
+        pickle.dump(preprocessed_data, f) 
 
 if __name__=="__main__":
 
