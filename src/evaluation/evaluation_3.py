@@ -332,28 +332,42 @@ def evaluate(model, data_loader):
     eval_results['truth_der'] = np.asarray(truth_derivatives_list).squeeze()
     return eval_results
 
-def get_results_outside_training(folder_name, batch_size=1):
+def get_results(exp_name,stage,resim=False,resim_index=None,folder_name=None):
 
-    params_path = os.path.join(path_results, f"{folder_name}/params.yaml")
-    batch_size = 1
+    if folder_name is None:
+        folder_name = exp_name + "_" + str(stage)
 
-    model = load_model(folder_name, batch_size)
-    data_loader_train, data_loader_valid = load_data(batch_size, params_path)
+    path_results = "/develop/results/spie_journal_2023"
+    loss_file = os.path.join(path_results, folder_name, "loss.csv")
+    loss = load_loss(loss_file)
+
+    encoder_train = pickle.load(open(os.path.join(path_results, folder_name, "train_info", "encoder.pkl"), "rb"))
+    recon_train = pickle.load(open(os.path.join(path_results, folder_name, "train_info", "recon.pkl"), "rb"))
     
-    train_results = evaluate(model, data_loader_train)
-    valid_results = evaluate(model, data_loader_valid)
-
-    return train_results, valid_results
-
-def get_results(folder_name,target):
-
-    train_path = os.path.join(path_results, folder_name, "train_info")
-    valid_path = os.path.join(path_results, folder_name, "valid_info")
-
-    train_results = pickle.load(open(os.path.join(train_path,target),"rb"))
-    valid_results = pickle.load(open(os.path.join(valid_path,target),"rb"))
+    encoder_valid =pickle.load(open(os.path.join(path_results, folder_name, "valid_info", "encoder.pkl"), "rb"))
+    recon_valid = pickle.load(open(os.path.join(path_results, folder_name, "valid_info", "recon.pkl"), "rb"))
     
-    return train_results, valid_results
+    # outputs from the model
+    resim_train_eval = pickle.load(open(os.path.join(path_results, folder_name, "train_info", "resim.pkl"), "rb"))
+    resim_valid_eval = pickle.load(open(os.path.join(path_results, folder_name, "valid_info", "resim.pkl"), "rb"))
+
+    # get resim results
+    if resim == True:
+
+        try:
+            resim_train_results = pickle.load(open(os.path.join(path_results, folder_name, "train_info", f"sample_{resim_index}_preprocessed.pkl"), "rb"))
+        except FileNotFoundError:
+            resim_train_results = None
+            print("no file for resim_train")
+        try:
+            resim_valid_results = pickle.load(open(os.path.join(path_results, folder_name, "valid_info", f"sample_{resim_index}_preprocessed.pkl"), "rb"))
+        except:
+            resim_valid_results = None
+            print("no file for resim_valid")
+        return loss, encoder_train, recon_train, encoder_valid, recon_valid, resim_train_eval, resim_valid_eval, resim_train_results, resim_valid_results
+        
+    elif resim == False:
+        return loss, encoder_train, recon_train, encoder_valid, recon_valid, resim_train_eval, resim_valid_eval
 
 ##########################################
 ########## encoder eval ##################
@@ -685,90 +699,48 @@ def get_nf_resim(folder_name, target):
     #             nf_resim.append(resim['near_fields']['grating_ey'])
     return nf_resim
 
-def plot_dft_fields(truth, recon, resim, target, batch=True, idx=None, savefig=False):
-
+def plot_dft_fields(truth, recon, resim, idx=0, savefig=False, id=None): # idx refers to the sample number in the batch, id is identifier if we save the image
+    
     cmap = 'turbo'
+    fig, ax = plt.subplots(3, 3, sharey=True, sharex=True, figsize=(5,8), gridspec_kw={'width_ratios': [0.03, 1, 1]})
+    fig.suptitle(f"Electric Fields, y component, {id} dataset")
 
-    if batch is True:
+    mag_truth = truth[idx][0]
+    angle_truth = truth[idx][1]
+    mag_recon = recon[idx][1][0]
+    angle_recon = recon[idx][1][1]
+    mag_resim = resim[0][1][0]
+    angle_resim = resim[0][1][1]
 
-        titles = ['Truth Intensity', 'Truth Phase', 'Recon Intensity', 'Recon Phase', 'Resim Intensity', 
-        'Resim Phase']
-        #### index into truth, recon, and resim to get intensity and phase ###
-        #### also vmin and vmax ##############################################
-        data_map = {
-            
-            0: (lambda t: t[0]**2, 0, None),
-            1: (lambda t: t[1], -torch.pi, torch.pi),
-            2: (lambda rec: rec[0]**2, 0, None),
-            3: (lambda rec: rec[1], -torch.pi, torch.pi),
-            4: (lambda res: np.abs(res)**2, 0, None),
-            5: (lambda res: np.angle(res), -torch.pi, torch.pi),
-            
-        }
-        
-        fig, ax = plt.subplots(truth.shape[0], len(data_map.keys()), figsize=(10,truth.shape[0]*2))
-        fig.suptitle(target)
-        
-        for i, (t, rec, res) in enumerate(zip(truth, recon, resim)):
+    ax[0][1].imshow(mag_truth**2, cmap = cmap, vmin = 0)    
+    ax[0][2].imshow(angle_truth, cmap = cmap, vmin = -torch.pi, vmax = torch.pi)
     
-            for j in range(len(data_map.keys())):
-                
-                data_func, vmin, vmax = data_map[j]
-                data = data_func(t if j < 2 else rec if j < 4 else res)
+    ax[1][1].imshow(mag_recon**2, cmap = cmap, vmin = 0)
+    ax[1][2].imshow(angle_recon, cmap = cmap, vmin = -torch.pi, vmax = torch.pi)
     
-                im = ax[i][j].imshow(data, cmap=cmap, vmin=vmin, vmax=vmax)
+    ax[2][1].imshow(mag_resim**2, cmap = cmap, vmin = 0)
+    ax[2][2].imshow(angle_resim, cmap = cmap, vmin = -torch.pi, vmax = torch.pi)
+
+    column_titles = ['Intensity', 'Phase']
+    row_titles = ['Original/Truth', 'Recon', 'Resim']  # these row titles won't appear with axes off
+
+    for j in range(2):
+        ax[0][j+1].set_title(column_titles[j], fontsize=10)
     
-                divider = make_axes_locatable(ax[i][j])
-                cax = divider.append_axes('right', size='5%', pad=0.05)
-                cbar = fig.colorbar(im, cax=cax, orientation='vertical')
-                cbar.ax.tick_params(labelsize=6)
-    
-                ax[i][j].set_title(titles[j], fontsize=8)
-                ax[i][j].grid(False)
-                ax[i][j].axis('off')
-                
-    else:
+    for i in range(3):
+        ax[i][0].text(-0.5, 0.5, row_titles[i], transform = ax[i][0].transAxes, rotation=90, ha='center', va='center', fontsize=10)
+        ax[i][0].axis("off")
         
-        fig, ax = plt.subplots(3, 3, sharey=True, sharex=True, figsize=(5,8), gridspec_kw={'width_ratios': [0.03, 1, 1]})
-        fig.suptitle(target)
-        
-        abs_truth = truth[idx][0]
-        angle_truth = truth[idx][1]
-        abs_recon = recon[idx][0]
-        angle_recon = recon[idx][1]
-        abs_resim = np.abs(resim[idx])
-        angle_resim = np.angle(resim[idx])
-    
-        ax[0][1].imshow(abs_truth**2, cmap = cmap, vmin = 0)    
-        ax[0][2].imshow(angle_truth, cmap = cmap, vmin = -torch.pi, vmax = torch.pi)
-        
-        ax[1][1].imshow(abs_recon**2, cmap = cmap, vmin = 0)
-        ax[1][2].imshow(angle_recon, cmap = cmap, vmin = -torch.pi, vmax = torch.pi)
-        
-        ax[2][1].imshow(abs_resim**2, cmap = cmap, vmin = 0)
-        ax[2][2].imshow(angle_resim, cmap = cmap, vmin = -torch.pi, vmax = torch.pi)
-    
-        column_titles = ['Intensity', 'Phase']
-        row_titles = ['Original/Truth', 'Recon', 'Resim']  # these row titles won't appear with axes off
-    
-        for j in range(2):
-            ax[0][j+1].set_title(column_titles[j], fontsize=10)
-        
-        for i in range(3):
-            #ax[i][0].set_ylabel(row_titles[i], fontsize=10)
-            ax[i][0].text(-0.5, 0.5, row_titles[i], transform = ax[i][0].transAxes, rotation=90, ha='center', va='center', fontsize=10)
-            ax[i][0].axis("off")
-            
-        for i in range(3):
-            for j in range(1, 3):
-                ax[i][j].grid(False)
-                ax[i][j].axis("off")
+    for i in range(3):
+        for j in range(1, 3):
+            ax[i][j].grid(False)
+            ax[i][j].axis("off")
         
     fig.tight_layout()
     
     if savefig == True:
-        flag = 'batch' if batch else f'single_sample_idx_{idx}'
-        fig.savefig(f'other_plots/{target}_{flag}.pdf')
+        #flag = 'batch' if batch else f'single_sample_idx_{idx}'
+        fig.savefig(f'other_plots/{id}.pdf')
 
 
 if __name__=="__main__":

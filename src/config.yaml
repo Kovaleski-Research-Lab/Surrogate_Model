@@ -8,7 +8,7 @@ training_stage :
 torch_home: '/develop/pretrained_models'
 seed: [True, 1337]
 train: True
-model_id: "baseline_1_nockpt"
+model_id: "all_on"
 
 exp_name: 
 prev_model_id:
@@ -21,10 +21,10 @@ batch_size: 16
 num_epochs: 100 
 
 mcl_params:
-    gamma: 0     # phase
+    gamma: 1     # phase
     delta: 1     # derivatives
-    epsilon: 0   # intensity 
-    alpha: 0     # near-field
+    epsilon: 1   # intensity 
+    alpha: 1     # near-field
 
 load_checkpoint: False # only False when doing first stage 
 freeze_encoder: False 

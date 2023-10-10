@@ -159,7 +159,7 @@ class CAI_Datamodule(LightningDataModule):
             #dataset = customDataset(self.params, torch.load(os.path.join(self.path_data, train_file)),
             #                        self.transform)
             
-            dataset = customDataset(self.params, torch.load(os.path.join(output_pt_file)),
+            dataset = customDataset(self.params, torch.load(output_pt_file),
                                     self.transform)
             train_set_size = int(len(dataset)*0.8)
             valid_set_size = len(dataset) - train_set_size
