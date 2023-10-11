@@ -86,7 +86,7 @@ def run(radii_list, index, pm, dataset=None):
     model.run_sim(pm.sim_params)
     elapsed_time = time.time() - start_time
     elapsed_time = round(elapsed_time / 60,2)
-    
+    print(f"simulation finished in {elapsed_time} minutes") 
     model.collect_field_info()
     
     data = {}
@@ -121,6 +121,7 @@ def run(radii_list, index, pm, dataset=None):
     data["radii"] = radii_list
     
     if(pm.resim == 0):
+        print("dumping generated data now")
         dump_data(index, data, pm) 
     elif(pm.resim == 1):
         eval_name = f"sample_{index}_preprocessed.pkl"
