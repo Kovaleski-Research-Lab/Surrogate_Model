@@ -74,6 +74,7 @@ def run(radii_list, index, pm, dataset=None):
         model.build_geometry(pm.geometry_params)
         pm.geometry.append(model.pillar)
     # Build Source object #
+    print("populated geometry")
     model.build_source(pm.source_params)
      
     # Build Simulation object # 
