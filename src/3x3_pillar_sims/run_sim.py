@@ -158,6 +158,7 @@ if __name__=="__main__":
             
         neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
         radii_list = neighbors_library[idx]
+        print(f"about to launch sim - index = {idx}")
         run(radii_list, idx, pm)
              
 
