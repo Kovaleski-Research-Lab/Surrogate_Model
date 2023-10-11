@@ -396,8 +396,15 @@ def plot_scatter(ax, truth, pred, title, x_label, y_label):
     ax.grid(color='black')
     ax.set_facecolor('white')
 
-def regression_plots(title, phase_train_truth, phase_train_pred, phase_valid_truth, phase_valid_pred, der_train_truth, der_train_pred, der_valid_truth, der_valid_pred, save_fig=False):
+#def regression_plots(title, phase_train_truth, phase_train_pred, phase_valid_truth, phase_valid_pred, der_train_truth, der_train_pred, der_valid_truth, der_valid_pred, save_fig=False):
+def regression_plots(title, encoder_train, encoder_valid, save_fig=False):
     
+    phase_train_truth, phase_train_pred = encoder_train['phase_truth'].flatten(), encoder_train['phase_pred'].flatten()
+    phase_valid_truth, phase_valid_pred = encoder_valid['phase_truth'].flatten(), encoder_valid['phase_pred'].flatten()
+    der_train_truth, der_train_pred = encoder_train['deriv_truth'].flatten(), encoder_train['deriv_pred'].flatten()
+    der_valid_truth, der_valid_pred = encoder_valid['deriv_truth'].flatten(), encoder_valid['deriv_pred'].flatten()
+    int_train_truth, int_train_pred = encoder_train['intensity_truth'].flatten(), encoder_train['intensity_pred'].flatten()
+
     x_values = np.linspace(-np.pi, np.pi, 100)
     
     fig, ax = plt.subplots(2, 2, figsize=(9, 6))

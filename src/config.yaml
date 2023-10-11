@@ -8,7 +8,7 @@ training_stage :
 torch_home: '/develop/pretrained_models'
 seed: [True, 1337]
 train: True
-model_id: "all_on"
+model_id: "allOnPSNR"
 
 exp_name: 
 prev_model_id:

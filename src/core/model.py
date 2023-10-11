@@ -306,16 +306,16 @@ class SurrogateModel(LightningModule):
                 z_mag_pred, z_angle_pred = self.get_mag_and_angle(p, 2)
 
                 # There's a loss associated with magnitude and angle of each component.
-                x_loss_mag = self.ae_loss(x_mag_pred, x_mag, choice=0)       
-                x_loss_angle = self.ae_loss(x_angle_pred, x_angle, choice=0)
+                x_loss_mag = self.ae_loss(x_mag_pred, x_mag, choice=1)       
+                x_loss_angle = self.ae_loss(x_angle_pred, x_angle, choice=1)
                 temp_x.append(torch.cat((x_loss_mag.view(1), x_loss_angle.view(1)), dim=0))
     
-                y_loss_mag = self.ae_loss(y_mag_pred, y_mag, choice=0)
-                y_loss_angle = self.ae_loss(y_angle_pred, y_angle, choice=0)
+                y_loss_mag = self.ae_loss(y_mag_pred, y_mag, choice=1)
+                y_loss_angle = self.ae_loss(y_angle_pred, y_angle, choice=1)
                 temp_y.append(torch.cat((y_loss_mag.view(1), y_loss_angle.view(1)), dim=0))
                 
-                z_loss_mag = self.ae_loss(z_mag_pred, z_mag, choice=0)
-                z_loss_angle = self.ae_loss(z_angle_pred, z_angle, choice=0)
+                z_loss_mag = self.ae_loss(z_mag_pred, z_mag, choice=1)
+                z_loss_angle = self.ae_loss(z_angle_pred, z_angle, choice=1)
                 temp_z.append(torch.cat((z_loss_mag.view(1), z_loss_angle.view(1)), dim=0))
           
             # for each batch, aggregate loss: index 0 is mag, index 1 is angle. 

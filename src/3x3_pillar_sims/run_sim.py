@@ -140,7 +140,7 @@ if __name__=="__main__":
 
     params = yaml.load(open('../config.yaml'), Loader = yaml.FullLoader).copy()
     pm = parameter_manager.ParameterManager(params=params)
-    pm.resim = 1
+    pm.resim = 0
     pm.exp_name = "baseline_3"
     print(f"resolution is {pm.resolution}")
 
