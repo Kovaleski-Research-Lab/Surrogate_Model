@@ -150,13 +150,13 @@ if __name__=="__main__":
         print("run_sim.py set to generate data")
         parser.add_argument("-index", type=int, help="The index matching the index in radii_neighbors")
         parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to") # this is empty in our config file. gets set in the kubernetes job file
-           
+        print("parsed args successfully.") 
         args = parser.parse_args() 
 
         idx = args.index
         path_out_sims = args.path_out_sims
         pm.path_dataset = path_out_sims
-            
+        print(f"idx={idx}")
         neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
         radii_list = neighbors_library[idx]
         print(f"about to launch sim - index = {idx}")
