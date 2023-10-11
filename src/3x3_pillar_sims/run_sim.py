@@ -146,16 +146,12 @@ if __name__=="__main__":
     pm.exp_name = "baseline_3"
     print(f"resolution is {pm.resolution}")
 
-    parser.add_argument("-index", type=int, help="The index matching the index in radii_neighbors")
-    parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to") # this is empty in our config file. gets set in the kubernetes job file
-    args = parser.parse_args() 
-    print("parsed args successfully.") 
-    
     if pm.resim == 0: # datagen
         print("run_sim.py set to generate data")
-        #parser.add_argument("-index", type=int, help="The index matching the index in radii_neighbors")
-        #parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to") # this is empty in our config file. gets set in the kubernetes job file
-        #print("parsed args successfully.") 
+        parser = argparse.ArgumentParser()
+        parser.add_argument("-index", type=int, help="The index matching the index in radii_neighbors")
+        parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to") # this is empty in our config file. gets set in the kubernetes job file
+        print("parsed args successfully.") 
 
         idx = args.index
         path_out_sims = args.path_out_sims
