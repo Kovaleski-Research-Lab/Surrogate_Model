@@ -33,8 +33,8 @@ Monitor data generation job
 - Note: interactive pods only last 6 hours. If a pod expires, it needs to be deleted: `kubectl delete pod {pod_name}` and then recreated.
   
 - Use an interactive pod to check what simulation files are being generated
-  - `kubectl apply -f monitor_pod.yaml` : create the pod. Monitor creation with `kubectl describe pod monitor`.
-  - `kubectl exec -it monitor -- /bin/bash` : enter the monitor pod as interactive root user.
+  - `kubectl apply -f andy_monitor.yaml` : create the pod. Monitor creation with `kubectl describe pod monitor`.
+  - `kubectl exec -it andy-monitor -- /bin/bash` : enter the monitor pod as interactive root user.
   - `ls /develop/results` : show created simulation files
 
 ## Repo Details
