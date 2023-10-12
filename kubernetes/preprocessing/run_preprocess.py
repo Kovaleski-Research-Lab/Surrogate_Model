@@ -125,7 +125,7 @@ def run(params):
     
 if __name__ == "__main__":
     args = parse_args(sys.argv)
-    
+    print("running preprocess.py") 
     params = load_config(args["config"]) 
     #atexit.register(exit_handler)  # this is how we clean up jobs. 
     run(params)
