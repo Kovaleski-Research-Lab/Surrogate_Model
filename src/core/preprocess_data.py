@@ -164,6 +164,7 @@ def preprocess(pm, data, filename=None, kube=False):
             #'sim_times' : sim_times,
             }
     if kube is True:
+        embed();exit()
         path_save = '/develop/results/preprocessed' #KUBE
         pkl_file_path = os.path.join(path_save, filename)
         with open(pkl_file_path, "wb") as f:
@@ -220,7 +221,7 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
             print("pickle error: pickle file error")
         except Exception as e:
             print("Some other error: ", e)
-    print(count + " files preprocessed successfully.")
+    print(count,"files preprocessed successfully.")
     
 if __name__=="__main__":
     print("executing preprocess_data.py")
