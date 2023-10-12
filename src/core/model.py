@@ -108,10 +108,7 @@ class SurrogateModel(LightningModule):
 
     def constrain_phase(self, phase): 
     
-        #return (torch.sin(phase) * torch.pi).to(dtype=torch.float64)  # first we constrain it by sin which is periodic
-        #return (torch.sin(phase) * torch.pi)  # first we constrain it by sin which is periodic
-                                             # then we mult by pi to scale it
-       return phase
+        return (phase + torch.pi) % (2 * torch.pi) - torch.pi 
 
     def select_model(self):
 

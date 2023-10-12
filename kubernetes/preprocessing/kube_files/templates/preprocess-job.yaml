@@ -16,7 +16,7 @@ spec:
           command: ["/bin/sh", "-c"]
           args: ["git clone https://github.com/Kovaleski-Research-Lab/surrogate_model.git .;
                     cd /develop/code/src/core;
-                    python3 /develop/code/src/core/preprocess_data.py > /develop/results/kube_logs/preprocessing.log"]
+                    python3 /develop/code/src/core/preprocess_data.py > /develop/results/current_logs/preprocessing.log"]
           resources:
             limits:
               memory: 500G
@@ -34,3 +34,6 @@ spec:
           persistentVolumeClaim:
             claimName: meep-results
       restartPolicy: Never
+
+# for debugging within args:
+# echo whatever > /develop/results/kube_logs/test_1.log;

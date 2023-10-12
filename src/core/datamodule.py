@@ -91,12 +91,11 @@ class CAI_Datamodule(LightningDataModule):
         # this next block is a bandaid. the model expects a .pt file but preprocess.py was changed
         # to dump out .pkl files to work better with kubernetes.
         # ---- Need to overhaul the data preprocess step for this model! ----
-        first=False # if i haven't already put all the data into a .pt file
+        first=True # if i haven't already put all the data into a .pt file
         filename = "dataset.pt"
         output_pt_file = f'/develop/data/spie_journal_2023/kube_dataset/preprocessed/{filename}'
         if first==True:
-            pkl_directory = '/develop/data/spie_journal_2023/kube_dataset/preprocessed/debugging'
-            #pkl_directory = '/develop/data/spie_journal_2023/kube_dataset/preprocessed'
+            pkl_directory = '/develop/data/spie_journal_2023/kube_dataset/preprocessed'
 
             new_data = {
                         'all_near_fields': {

@@ -8,7 +8,7 @@ training_stage :
 torch_home: '/develop/pretrained_models'
 seed: [True, 1337]
 train: True
-model_id: "allOnPSNR"
+model_id: "allOnConstrainPhaseMoreData"
 
 exp_name: 
 prev_model_id:
