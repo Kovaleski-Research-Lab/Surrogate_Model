@@ -98,9 +98,10 @@ def run_generation(params):
 
         if(len(current_group) < params["num_parallel_ops"]):
 
-            num_to_launch = params["num_parallel_ops"] - len(current_group)
-
             if counter not in file_list:
+
+                num_to_launch = params["num_parallel_ops"] - len(current_group)
+
                 for i in range(counter, counter + num_to_launch):
 
                     # --- Configure simulation job
