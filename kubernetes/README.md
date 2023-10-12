@@ -4,14 +4,16 @@
     - This resource also shows you how to create your S3 bucket and copy data to/from.
     - You'll want to set up local S3 integration on your local compute using the instructions at the link.
 2. You'll need to have an interactive pod mounted to your PV whose docker image has rclone installed.
-    - -v ; curl https://rclone.org/install.sh | bash https://rclone.org/install/
+    - -v ; curl https://rclone.org/install.sh | bash
     - the pod needs to have environment variables set like this one: https://github.com/MU-HPDI/nautilus/blob/main/kube/cloudstorage/rclone_pod.yml
 3. When you enter into the pod (kubectl exec -it {podName} -- /bin/bash) you will need to set up local S3 Integration, like you did on your local machine, only this time set your endpoint to http://rook-ceph-rgw-centrals3.rook-central.
+   - access key id: JPKIHDAZY41Q5IPG1SPM
+   - secret key: 2AZNOB1ivWEGKV1UYK6HDb5KuEJJ0s5dxDBxQPEE
     - Note: There's probbaly a better way. We should figure out how to put this config stuff in the yaml file that your pod uses so we don't have to set up local S3 Integration every time.
-4. Run `rclone lsd nautilus:` both locally and from your pod to make sure your bucket exists.
-5. From your interactive pod, copy data from your PV to the bucket: `rclone copy --progress --copy-links {path/to/your/data} nautilus:{your-bucket}`
+5. Run `rclone lsd nautilus:` both locally and from your pod to make sure your bucket exists.
+6. From your interactive pod, copy data from your PV to the bucket: `rclone copy --progress --copy-links {path/to/your/data} nautilus:{your-bucket}`
     - Note: If you build directories in your bucket, make sure you include the path to the data your grabbing: `rclone copy --progress --copy-links {/path/to/your/data} nautilus:{your-bucket/your/path}`
-6. From your local machine, copy data from the bucket to a local path: `rclone copy --progress --copy-links nautilus:{your-bucketi/and/path/if/it/exists} {your/local/destination/path}`
+7. From your local machine, copy data from the bucket to a local path: `rclone copy --progress --copy-links nautilus:{your-bucketi/and/path/if/it/exists} {your/local/destination/path}`
 
 # Opening an jupyter notebook with kubernetes:
 
