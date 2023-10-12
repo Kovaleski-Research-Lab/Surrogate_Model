@@ -419,7 +419,7 @@ def regression_plots(title, encoder_train, encoder_valid, save_fig=False):
     fig.tight_layout()
 
     if(save_fig==True):
-        fig.savefig("other_plots/regression_plots.pdf")
+        fig.savefig("images/other_plots/regression_plots.pdf")
 
 ##########################################
 #####  Decoder eval #######################
@@ -613,25 +613,25 @@ def calculate_matrix(original, recon, resim, similarity = True):
     
     return conf_matrix
 
-def build_custom_conf_matrices(original, recon, resim, similarity = True, savefig = False):
+def build_custom_conf_matrices(original, recon, resim, idx, similarity = True, savefig = False):
 
-    resim = np.asarray(resim)
-    resim_amp =np.abs(resim)
-    resim_phase = np.angle(resim)
+    resim = np.asarray(resim)  # 0th element (there's only one), 1 for y component
+    #resim_amp =np.abs(resim)
+    #resim_phase = np.angle(resim)
 
-    resim = np.stack([resim_amp, resim_phase], axis=1)
+    #resim = np.stack([resim_amp, resim_phase], axis=1)
     
-    original = torch.from_numpy(original)
+    original = torch.from_numpy(original) 
     recon = torch.from_numpy(recon)
     resim = torch.from_numpy(resim)
-    
-    original_amplitude = original[:,0,:,:]
-    recon_amplitude = recon[:,0,:,:]
-    resim_amplitude = resim[:,0,:,:]
 
-    original_phase = original[:,1,:,:]
-    recon_phase = recon[:,1,:,:]
-    resim_phase = resim[:,1,:,:]
+    original_amplitude = original[idx,0,:,:]  # given as a batch. we need to match the index we used for the resim.
+    recon_amplitude = recon[idx,1,0,:,:] # also given as a batch. match the index, get y componenet of field
+    resim_amplitude = resim[0,1,0,:,:] # always use the 0th index becuase there's only one resim
+
+    original_phase = original[idx,1,:,:]
+    recon_phase = recon[idx,1,1,:,:]
+    resim_phase = resim[0,1,1,:,:]
 
     amplitude_conf_matrix = calculate_matrix(original_amplitude, recon_amplitude, resim_amplitude, similarity)
     phase_conf_matrix = calculate_matrix(original_phase, recon_phase, resim_phase, similarity)
@@ -747,7 +747,7 @@ def plot_dft_fields(truth, recon, resim, idx=0, savefig=False, id=None): # idx r
     
     if savefig == True:
         #flag = 'batch' if batch else f'single_sample_idx_{idx}'
-        fig.savefig(f'other_plots/{id}.pdf')
+        fig.savefig(f'images/other_plots/{id}.pdf')
 
 
 if __name__=="__main__":
