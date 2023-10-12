@@ -223,6 +223,7 @@ def preprocess_data(pm, kube, raw_data_files = None, path = None):
     print(count + " files preprocessed successfully.")
     
 if __name__=="__main__":
+    print("executing preprocess_data.py")
     params = yaml.load(open('../config.yaml'), Loader = yaml.FullLoader).copy()
     pm = parameter_manager.ParameterManager(params=params)
 

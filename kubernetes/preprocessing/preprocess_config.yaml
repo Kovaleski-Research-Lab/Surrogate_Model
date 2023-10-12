@@ -22,7 +22,7 @@ path_train_job_files: /develop/results/kube_jobs
 # - num_parallel_ops: number of simulations happening in parallel, Denoate as b.
 # - num_cpus_total: number of cpus used at once in computing cluster, denote as c | c = a * b.
 
-num_mem_lim: 5000G
+num_mem_lim: 500G
 num_mem_req: 400G
 num_cpus_per_op: 40
 #num_cpus_total: 2048
