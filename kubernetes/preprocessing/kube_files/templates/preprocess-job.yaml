@@ -19,11 +19,11 @@ spec:
                     python3 /develop/code/src/core/preprocess_data.py > /develop/results/kube_logs/preprocessing.log"]
           resources:
             limits:
-              memory: 240G
+              memory: 500G
               cpu: 40
               #nvidia.com/gpu: 1
             requests:
-              memory: 200G
+              memory: 400G
               cpu: 32
               #nvidia.com/gpu: 1
           volumeMounts:

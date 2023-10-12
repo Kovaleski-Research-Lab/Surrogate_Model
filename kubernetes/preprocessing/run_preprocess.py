@@ -122,7 +122,8 @@ def run(params):
 
     print(f"running kubernetes subprocess...{path_job}")
     subprocess.run(["kubectl", "apply", "-f", path_job])
-    
+    print(f"did that finish?")    
+
 if __name__ == "__main__":
     args = parse_args(sys.argv)
     print("running preprocess.py") 

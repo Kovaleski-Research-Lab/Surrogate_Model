@@ -164,7 +164,6 @@ def preprocess(pm, data, filename=None, kube=False):
             #'sim_times' : sim_times,
             }
     if kube is True:
-        embed();exit()
         path_save = '/develop/results/preprocessed' #KUBE
         pkl_file_path = os.path.join(path_save, filename)
         with open(pkl_file_path, "wb") as f:
