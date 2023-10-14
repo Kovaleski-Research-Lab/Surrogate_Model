@@ -91,7 +91,8 @@ class CAI_Datamodule(LightningDataModule):
         # this next block is a bandaid. the model expects a .pt file but preprocess.py was changed
         # to dump out .pkl files to work better with kubernetes.
         # ---- Need to overhaul the data preprocess step for this model! ----
-        first = False # if i haven't already put all the data into a .pt file
+        first = True # if i haven't already put all the data into a .pt file
+        total_samples = 800
         filename = "dataset.pt"
         output_pt_file = f'/develop/data/spie_journal_2023/kube_dataset/preprocessed/{filename}'
         if first==True:
@@ -116,8 +117,10 @@ class CAI_Datamodule(LightningDataModule):
             temp_1550, temp_1060, temp_1300, temp_1650, temp_2881 = [], [], [], [], []
             
             for i, element in enumerate(pkl_data['all_near_fields']):  # looping through a list
-                if i == 1000:
-                    break
+                if first == True:
+                    if i == total_samples:
+                        #break  # use this if you want to redue the dataset for testing 
+                        pass  # use this if you're training on the full dataset
                 # each element is a dictionary
                 for key, value in element.items():
                     if key == 'near_fields_1550':

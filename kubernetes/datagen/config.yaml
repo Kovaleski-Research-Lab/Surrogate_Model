@@ -23,9 +23,9 @@ path_out_sims: /develop/results # this is really a duplicate. can change 'path_s
 
 num_mem_lim: 240G
 num_mem_req: 200G
-num_cpus_per_op: 40
+num_cpus_per_op: 48
 #num_cpus_total: 2048
-num_parallel_ops: 443 
+num_parallel_ops: 100 
 #num_cpus_total: 160
 
 namespace: gpn-mizzou-muem

@@ -5,6 +5,7 @@ metadata:
 spec:
   containers:
     - name: monitor
+      #image: docker.io/kovaleskilab/meep_ml:s3_enabled
       image: docker.io/ctvqfq/bunny_ai:spie-1.2
       env:
         - name: RCLONE_NAUTILUS_TYPE
@@ -36,6 +37,3 @@ spec:
 
   restartPolicy: Never
 
-#export RCLONE_CONFIG_NAUTILUS_ACCESS_KEY_ID=JPKIHDAZY41Q5IPG1SPM
-#export RCLONE_CONFIG_NAUTILUS_SECRET_ACCESS_KEY=2AZNOB1ivWEGKV1UYK6HDb5KuEJJ0s5dxDBxQPEE
-#envsubst < monitor_pod.yaml | kubectl apply -f -

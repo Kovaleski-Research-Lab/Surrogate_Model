@@ -176,7 +176,7 @@ class ParameterManager():
             traceback.print_exc()
             sys.exit()
 
-    def get_prev_name(self, name):
+    def get_prev_name(self, name, load_checkpoint):
         try:
             number = int(name.split('_')[1])
         except (IndexError, ValueError):
@@ -185,7 +185,7 @@ class ParameterManager():
         # Calculate prev_name based on the numeric part of name
         prev_number = number - 1
         if prev_number < 0:
-            print("First stage of training. load_checkpoint must be false: {pm.load_checkpoint}")
+            print(f"First stage of training. load_checkpoint must be false. it is: {load_checkpoint}")
             return ""
  
         # Construct prev_name
@@ -240,7 +240,7 @@ class ParameterManager():
         self.cs = [mp.Ex, mp.Ey, mp.Ez]
         self._data_shape = [1, 30, self.Nxp, self.Nyp]
         self.exp_name = self.model_id.split('_')[0]
-        self.prev_model_id = self.get_prev_name(self.model_id) 
+        self.prev_model_id = self.get_prev_name(self.model_id,self.load_checkpoint) 
         self.collect_params()    
 
     def collect_params(self):

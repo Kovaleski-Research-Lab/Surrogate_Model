@@ -8,7 +8,7 @@ training_stage :
 torch_home: '/develop/pretrained_models'
 seed: [True, 1337]
 train: True
-model_id: "testing_0"
+model_id: "all_on2"
 
 exp_name: 
 prev_model_id:
@@ -18,13 +18,13 @@ prev_model_id:
 #       Training Params
 #--------------------------------
 batch_size: 16 
-num_epochs: 60
+num_epochs: 100 
 
 mcl_params:
     gamma: 1     # phase
-    delta: 0     # derivatives
-    epsilon: 0   # intensity 
-    alpha: 0     # near-field
+    delta: 1     # derivatives
+    epsilon: 1   # intensity 
+    alpha: 1     # near-field
 
 load_checkpoint: False # only False when doing first stage 
 freeze_encoder: False 
