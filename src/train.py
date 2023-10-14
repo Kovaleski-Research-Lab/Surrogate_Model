@@ -71,7 +71,6 @@ def run(params):
                           num_sanity_val_steps = 0, default_root_dir = pm.path_results, 
                           check_val_every_n_epoch = pm.valid_rate, callbacks = [checkpoint_callback])
 
-    #from IPython import embed; embed(); exit()
     # Train
    
     trainer.fit(model,data) # this calls train_step() and valid_step()

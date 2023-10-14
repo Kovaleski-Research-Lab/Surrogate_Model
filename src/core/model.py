@@ -107,21 +107,68 @@ class SurrogateModel(LightningModule):
         self.save_hyperparameters()
 
     def constrain_phase(self, phase): 
+        return torch.atan2(torch.sin(phase), torch.cos(phase))
+        #return torch.remainder((phase + torch.pi), (2*torch.pi)) - torch.pi
+        #return torch.exp(1j*phase).angle()
+        #return (phase + torch.pi) % (2 * torch.pi) - torch.pi 
+
+    def get_mag_and_angle(self, field, comp_idx): # we use this to calculate near field loss
+
+        comp = field[comp_idx,:,:,:]
+        mag = comp[0,:,:]
+        angle = comp[1,:,:]
+        return mag, angle
+
+    def calculate_intensity(self, x_mag, y_mag, z_mag):
+
+        E_0 = torch.sqrt(torch.abs(x_mag)**2 + torch.abs(y_mag)**2 + torch.abs(z_mag)**2)
+        intensity = 0.5 * E_0**2
+        intensity = intensity.mean()
+        return intensity
+
+    def get_pred_intensities(self, pred_nf):
+
+        pred_intensities = []
+
+        for pred in pred_nf: # batch size is 8, so 8 iterations. shape of each pred_recon is [5, 3, 2, xdim, ydim]
+            temp = [] # to hold the intensities of a particular wavelength
+            for i in range(pred.shape[0]):
+                freq = pred[i,:,:,:,:]
+                x_mag = freq[0,0,:,:] # 0: x, 0: mag
+                y_mag = freq[1,0,:,:] # 1: y, 0: mag
+                z_mag = freq[2,0,:,:] # 2: z, 0: mag
+                intensity = self.calculate_intensity(x_mag, y_mag, z_mag)
+                temp.append(intensity)
+            
+            pred_intensities.append(temp) # index 0 holds sample 0, etc.
+
+        pred_intensities = torch.tensor(pred_intensities, requires_grad=True) # matches the shape of intensities.
+        
+        return pred_intensities
+
+    #------------------------------
+    # Convert: Phase To Derivatives
+    #------------------------------
+    def convert_phase(self, batch_phase):
+        batch_size = batch_phase.size()[0]
+        return curvature.get_der_train(batch_phase.view(batch_size, 3, 3))
     
-        return (phase + torch.pi) % (2 * torch.pi) - torch.pi 
+    def get_abs_difference(self, prediction, label):
+
+        return torch.abs(prediction - label)
 
     def select_model(self):
 
         #Model
         if self.backbone == "resnet18":
-             model = smp.Unet(encoder_name = "resnet18", encoder_weights = self.weights, 
-                         in_channels= self.data_shape[1], classes = 30)
+            model = smp.Unet(encoder_name = "resnet18", encoder_weights = self.weights, 
+                         in_channels = self.data_shape[1], classes = 30)
         elif self.backbone == "resnet34":
             model = smp.Unet(encoder_name = "resnet34", encoder_weights = self.weights, 
-                         in_channels= self.data_shape[1], classes = 30)
+                         in_channels = self.data_shape[1], classes = 30)
         elif self.backbone == "resnet50":
             model = smp.Unet(encoder_name = "resnet50", encoder_weights = self.weights, 
-                         in_channels= self.data_shape[1], classes = 30)
+                         in_channels = self.data_shape[1], classes = 30)
 
         #model = model.float()
         self.encoder = model.encoder
@@ -141,11 +188,10 @@ class SurrogateModel(LightningModule):
         self.first = conv_upsample.get_conv_transpose(input_size = spatial_shape,
                                         in_channels = self.data_shape[1], 
                                         out_channels = self.data_shape[1], mod_size = 32)
-
+        
         temp = torch.rand(tuple(self.data_shape.numpy()))
         response = self.first(temp)
         self.last = conv_upsample.get_conv(spatial_shape, response.shape)
-
         # - Creating latent space between encoder and decoder of unet architecture
         # This is the place where we should constrain the model for physics. Knowledge discovery.
         # We have a thick feature extractor into an MLP, back through an MLP, and then into
@@ -187,6 +233,7 @@ class SurrogateModel(LightningModule):
             fn = PeakSignalNoiseRatio().to(self.device)
             loss = 1 / (1 + fn(preds, labels))
 
+        # we are aggregating loss here in a naiive way. investigate other methods from hyperspectral image processing.
         elif(choice == 2): # this is thermo loss 
     
             # get initial intensities as a list in order: [2881...1060] use these as truth_initial and pred_initial
@@ -223,50 +270,14 @@ class SurrogateModel(LightningModule):
             pass # make it earth movers distance 
         return loss
 
-    def get_mag_and_angle(self, field, comp_idx): # we use this to calculate near field loss
 
-        comp = field[comp_idx,:,:,:]
-        mag = comp[0,:,:]
-        angle = comp[1,:,:]
-        return mag, angle
-
-    def calculate_intensity(self, x_mag, y_mag, z_mag):
-
-        E_0 = torch.sqrt(torch.abs(x_mag)**2 + torch.abs(y_mag)**2 + torch.abs(z_mag)**2)
-        intensity = 0.5 * E_0**2
-        intensity = intensity.mean()
-        return intensity
-
-    def get_pred_intensities(self, pred_nf):
-
-        pred_intensities = []
-
-        for pred in pred_nf: # batch size is 8, so 8 iterations. shape of each pred_recon is [5, 3, 2, xdim, ydim]
-            temp = [] # to hold the intensities of a particular wavelength
-            for i in range(pred.shape[0]):
-                freq = pred[i,:,:,:,:]
-                x_mag = freq[0,0,:,:] # 0: x, 0: mag
-                y_mag = freq[1,0,:,:] # 1: y, 0: mag
-                z_mag = freq[2,0,:,:] # 2: z, 0: mag
-                intensity = self.calculate_intensity(x_mag, y_mag, z_mag)
-                temp.append(intensity)
-            
-            pred_intensities.append(temp) # index 0 holds sample 0, etc.
-
-        pred_intensities = torch.tensor(pred_intensities, requires_grad=True) # matches the shape of intensities.
-        
-        return pred_intensities
-
-    def calculate_thermo_loss(self):
-        pass
- 
     def objective(self, batch, predictions, all_nf, alpha = 1, gamma = 1, delta = 1, epsilon = 1):
 
         # We get truth values from the batch: phases, derivatives, intensities, near fields        
         radii = batch['radii'].squeeze()
 
         phases = batch['phases'].squeeze() 
-        phases = self.constrain_phase(phases)
+        #phases = self.constrain_phase(phases)
 
         derivatives = batch['derivatives'].squeeze()
 
@@ -303,16 +314,17 @@ class SurrogateModel(LightningModule):
                 z_mag_pred, z_angle_pred = self.get_mag_and_angle(p, 2)
 
                 # There's a loss associated with magnitude and angle of each component.
-                x_loss_mag = self.ae_loss(x_mag_pred, x_mag, choice=1)       
-                x_loss_angle = self.ae_loss(x_angle_pred, x_angle, choice=1)
+                recon_choice = 0
+                x_loss_mag = self.ae_loss(x_mag_pred, x_mag, choice=recon_choice)       
+                x_loss_angle = self.ae_loss(x_angle_pred, x_angle, choice=recon_choice)
                 temp_x.append(torch.cat((x_loss_mag.view(1), x_loss_angle.view(1)), dim=0))
     
-                y_loss_mag = self.ae_loss(y_mag_pred, y_mag, choice=1)
-                y_loss_angle = self.ae_loss(y_angle_pred, y_angle, choice=1)
+                y_loss_mag = self.ae_loss(y_mag_pred, y_mag, choice=recon_choice)
+                y_loss_angle = self.ae_loss(y_angle_pred, y_angle, choice=recon_choice)
                 temp_y.append(torch.cat((y_loss_mag.view(1), y_loss_angle.view(1)), dim=0))
                 
-                z_loss_mag = self.ae_loss(z_mag_pred, z_mag, choice=1)
-                z_loss_angle = self.ae_loss(z_angle_pred, z_angle, choice=1)
+                z_loss_mag = self.ae_loss(z_mag_pred, z_mag, choice=recon_choice)
+                z_loss_angle = self.ae_loss(z_angle_pred, z_angle, choice=recon_choice)
                 temp_z.append(torch.cat((z_loss_mag.view(1), z_loss_angle.view(1)), dim=0))
           
             # for each batch, aggregate loss: index 0 is mag, index 1 is angle. 
@@ -357,17 +369,130 @@ class SurrogateModel(LightningModule):
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
 
-    #------------------------------
-    # Convert: Phase To Derivatives
-    #------------------------------
-    def convert_phase(self, batch_phase):
-        batch_size = batch_phase.size()[0]
-        return curvature.get_der_train(batch_phase.view(batch_size, 3, 3))
-    
-    def get_abs_difference(self, prediction, label):
+    def forward(self, x): # not exactly the forward pass. depending on if ptlightning called forward from training (grads) or valid (no grads) you ahve grads or not.
+        # Encoder: Feature Reduction
+        #embed()
+        x = self.first(x.float())
+        #print("self.encoder")
+        #embed()
+        x = self.encoder(x)
 
-        return torch.abs(prediction - label)
+        x_last = x[-1] 
+        # - Get last layer from Resnet encoder
+        x_shape = x_last.size()
+        x_last = x_last.view(x_shape[0], -1)
+        
+        # Learning: Phase parameters, derivatives
+        #print("encode phase")
+        #embed()
+        phase = self.encode_phase(x_last)
+        # Constrain phase
+        phase = self.constrain_phase(phase)
+        # do you calculate derivatives or after constraining phase? I think after.  
+        derivatives = self.convert_phase(phase)
 
+        # Decoder: Feature Reconstruction
+        #print("decode phase")
+        #embed()
+        x_last = self.decode_phase(phase) # MLP 
+        x_last = x_last.view(x_shape) 
+        # - Update last layer from Resnet encoder
+        x[-1] = x_last
+        #print("self.decoder/seg head")
+        #embed()
+        x_recon = self.seg_head(self.decoder(*x)) # MLP for final decison - takes output of the decoder and makes "classification" predictions. in our case, we're using it to give us amplitude and phase. we're co-opting a segmentation model to do this.
+        # seg head gives us a weird shape: (batch, channel, width, head) - so we send it to our self.last()
+        #print("self.last")
+        #embed()
+        recon = self.last(x_recon) # gets reshaped
+        #print("end")
+        #embed();exit()
+        return [recon, phase, derivatives]
+
+    def shared_step(self, batch, batch_idx): # training step, valid step, and testing all call this function. 
+
+        nf_2881 = batch['nf_2881'].unsqueeze(dim=1)
+
+        nf_1650 = batch['nf_1650'].unsqueeze(dim=1)
+
+        nf_1550 = batch['nf_1550'].unsqueeze(dim=1)
+
+        nf_1300 = batch['nf_1300'].unsqueeze(dim=1)
+
+        nf_1060 = batch['nf_1060'].unsqueeze(dim=1)
+
+        all_nf = torch.cat((nf_2881, nf_1650, nf_1550, nf_1300, nf_1060), dim=1).to(self.device)
+        shape = all_nf.shape
+        all_nf_reshaped = all_nf.view(shape[0], shape[1]*shape[2]*shape[3], shape[4], shape[5]) 
+       
+        outputs = self.forward(all_nf_reshaped)
+        outputs[0] = outputs[0].view(shape) # reshaped back to same size as all_nf. now i can access components, frequencies, etc.
+
+        return all_nf, outputs
+        
+    def training_step(self, batch, batch_idx):
+        
+        #Get predictions
+        
+        all_nf, predictions = self.shared_step(batch, batch_idx)
+        #Calculate loss
+        loss = self.objective(batch, predictions, all_nf)
+        total_loss = loss['total_loss']
+        x_loss = loss['x_loss']
+        y_loss = loss['y_loss']
+        z_loss = loss['z_loss']
+        phase_loss = loss['phase_loss']
+        derivative_loss = loss['derivative_loss']
+        thermo_loss = loss['thermo_loss']
+        
+        #Log the loss
+        self.log("train_total_loss", total_loss, prog_bar = True, on_step = False, on_epoch = True, sync_dist = True)
+        self.log("train_nf_x_loss", x_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+        self.log("train_nf_y_loss", y_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+        self.log("train_nf_z_loss", z_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+        self.log("train_phase_loss", phase_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+        self.log("train_derivative_loss", derivative_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+        self.log("train_thermo_loss", thermo_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+
+        return {'loss' : total_loss, 'output' : predictions, 'target' : batch}
+
+    def validation_step(self, batch, batch_idx):
+        #Get predictions
+        all_nf, predictions = self.shared_step(batch, batch_idx)
+
+        #Calculate loss
+        loss = self.objective(batch, predictions, all_nf)
+        total_loss = loss['total_loss']
+        x_loss = loss['x_loss']
+        y_loss = loss['y_loss']
+        z_loss = loss['z_loss']
+        phase_loss = loss['phase_loss']
+        derivative_loss = loss['derivative_loss']
+        thermo_loss = loss['thermo_loss']
+       
+        #Log the loss
+        self.log("val_total_loss", total_loss, prog_bar = True, on_step = False, on_epoch = True, sync_dist = True)
+        self.log("val_nf_x_loss", x_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+        self.log("val_nf_y_loss", y_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+        self.log("val_nf_z_loss", z_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+        self.log("val_phase_loss", phase_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+        self.log("val_derivative_loss", derivative_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+        self.log("val_thermo_loss", thermo_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+        #self.log("source_flux_loss", source_flux_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
+
+        return {'loss' : total_loss, 'output' : predictions, 'target' : batch}
+ 
+    def test_step(self, batch, batch_idx, dataloader_idx=0): # this lets us do evaluation
+        #Get predictions
+        all_nf, predictions = self.shared_step(batch, batch_idx) # grabs all preds from the dataloader
+        
+        pred_nf, pred_phases, pred_derivatives = predictions[0], predictions[1], predictions[2] # only using pred_nf here so we can calculate pred_intensities. using predictions as a list.
+        pred_intensities = self.get_pred_intensities(pred_nf) 
+        predictions.append(pred_intensities) 
+
+        # predictions passed as a list. [0]: pred_nf, [1]: pred_phases, [2]: pred_derivatives, [3]: pred_intensities
+        self.organize_testing(predictions, batch, batch_idx, dataloader_idx) # fills in those lists we defined above.
+ 
     def organize_testing(self, predictions, batch, batch_idx, dataloader): # this is part of those lists that has to be fixed.
          
         pred_nf, pred_phases, pred_derivatives, pred_intensities = predictions[0], predictions[1], predictions[2], predictions[3]
@@ -501,120 +626,7 @@ class SurrogateModel(LightningModule):
                 self.train_nf_1060_truth_resim.append(true_nf_1060[:,1,:,:,:].detach().cpu().numpy())
         else:
             exit()
-
-    def forward(self, x): # not exactly the forward pass. depending on if ptlightning called forward from training (grads) or valid (no grads) you ahve grads or not.
-        # Encoder: Feature Reduction
-        x = self.first(x.float())
-        x = self.encoder(x)
-        x_last = x[-1] 
-        # - Get last layer from Resnet encoder
-        x_shape = x_last.size()
-        x_last = x_last.view(x_shape[0], -1)
-        
-        # Learning: Phase parameters, derivatives
-        phase = self.encode_phase(x_last)
-
-        # Constrain phase
-        phase = self.constrain_phase(phase)
-        # do you calculate derivatives or after constraining phase? I think after.  
-        derivatives = self.convert_phase(phase)
-
-        # Decoder: Feature Reconstruction
-        x_last = self.decode_phase(phase) # MLP 
-        
-        x_last = x_last.view(x_shape) 
-        # - Update last layer from Resnet encoder
-        x[-1] = x_last
-        x_recon = self.seg_head(self.decoder(*x)) # MLP for final decison - takes output of the decoder and makes "classification" predictions. in our case, we're using it to give us amplitude and phase. we're co-opting a segmentation model to do this.
-        # seg head gives us a weird shape: (batch, channel, width, head) - so we send it to our self.last()
-        recon = self.last(x_recon) # gets reshaped
-        
-        return [recon, phase, derivatives]
-
-    def shared_step(self, batch, batch_idx): # training step, valid step, and testing all call this function. 
-
-        nf_2881 = batch['nf_2881'].unsqueeze(dim=1)
-
-        nf_1650 = batch['nf_1650'].unsqueeze(dim=1)
-
-        nf_1550 = batch['nf_1550'].unsqueeze(dim=1)
-
-        nf_1300 = batch['nf_1300'].unsqueeze(dim=1)
-
-        nf_1060 = batch['nf_1060'].unsqueeze(dim=1)
-
-        all_nf = torch.cat((nf_2881, nf_1650, nf_1550, nf_1300, nf_1060), dim=1).to(self.device)
-        shape = all_nf.shape
-        all_nf_reshaped = all_nf.view(shape[0], shape[1]*shape[2]*shape[3], shape[4], shape[5]) 
        
-        outputs = self.forward(all_nf_reshaped)
-        outputs[0] = outputs[0].view(shape) # reshaped back to same size as all_nf. now i can access components, frequencies, etc.
-
-        return all_nf, outputs
-        
-    def training_step(self, batch, batch_idx):
-        
-        #Get predictions
-        
-        all_nf, predictions = self.shared_step(batch, batch_idx)
-        #Calculate loss
-        loss = self.objective(batch, predictions, all_nf)
-        total_loss = loss['total_loss']
-        x_loss = loss['x_loss']
-        y_loss = loss['y_loss']
-        z_loss = loss['z_loss']
-        phase_loss = loss['phase_loss']
-        derivative_loss = loss['derivative_loss']
-        thermo_loss = loss['thermo_loss']
-        
-        #Log the loss
-        self.log("train_total_loss", total_loss, prog_bar = True, on_step = False, on_epoch = True, sync_dist = True)
-        self.log("train_nf_x_loss", x_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
-        self.log("train_nf_y_loss", y_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
-        self.log("train_nf_z_loss", z_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
-        self.log("train_phase_loss", phase_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
-        self.log("train_derivative_loss", derivative_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
-        self.log("train_thermo_loss", thermo_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
-
-        return {'loss' : total_loss, 'output' : predictions, 'target' : batch}
-
-    def validation_step(self, batch, batch_idx):
-        #Get predictions
-        all_nf, predictions = self.shared_step(batch, batch_idx)
-
-        #Calculate loss
-        loss = self.objective(batch, predictions, all_nf)
-        total_loss = loss['total_loss']
-        x_loss = loss['x_loss']
-        y_loss = loss['y_loss']
-        z_loss = loss['z_loss']
-        phase_loss = loss['phase_loss']
-        derivative_loss = loss['derivative_loss']
-        thermo_loss = loss['thermo_loss']
-       
-        #Log the loss
-        self.log("val_total_loss", total_loss, prog_bar = True, on_step = False, on_epoch = True, sync_dist = True)
-        self.log("val_nf_x_loss", x_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
-        self.log("val_nf_y_loss", y_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
-        self.log("val_nf_z_loss", z_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
-        self.log("val_phase_loss", phase_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
-        self.log("val_derivative_loss", derivative_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
-        self.log("val_thermo_loss", thermo_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
-        #self.log("source_flux_loss", source_flux_loss, prog_bar = False, on_step = False, on_epoch = True, sync_dist = True)
-
-        return {'loss' : total_loss, 'output' : predictions, 'target' : batch}
- 
-    def test_step(self, batch, batch_idx, dataloader_idx=0): # this lets us do evaluation
-        #Get predictions
-        all_nf, predictions = self.shared_step(batch, batch_idx) # grabs all preds from the dataloader
-        
-        pred_nf, pred_phases, pred_derivatives = predictions[0], predictions[1], predictions[2] # only using pred_nf here so we can calculate pred_intensities. using predictions as a list.
-        pred_intensities = self.get_pred_intensities(pred_nf) 
-        predictions.append(pred_intensities) 
-
-        # predictions passed as a list. [0]: pred_nf, [1]: pred_phases, [2]: pred_derivatives, [3]: pred_intensities
-        self.organize_testing(predictions, batch, batch_idx, dataloader_idx) # fills in those lists we defined above.
-        
 
     def on_test_end(self):         
          
@@ -723,4 +735,3 @@ if __name__ == "__main__":
     #model = Encoder(pm.params_model)
     
     model = SurrogateModel()
-    embed() 

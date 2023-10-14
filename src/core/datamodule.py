@@ -91,7 +91,7 @@ class CAI_Datamodule(LightningDataModule):
         # this next block is a bandaid. the model expects a .pt file but preprocess.py was changed
         # to dump out .pkl files to work better with kubernetes.
         # ---- Need to overhaul the data preprocess step for this model! ----
-        first=True # if i haven't already put all the data into a .pt file
+        first = False # if i haven't already put all the data into a .pt file
         filename = "dataset.pt"
         output_pt_file = f'/develop/data/spie_journal_2023/kube_dataset/preprocessed/{filename}'
         if first==True:
@@ -114,8 +114,10 @@ class CAI_Datamodule(LightningDataModule):
             pkl_data = self.load_data(pkl_directory)
             
             temp_1550, temp_1060, temp_1300, temp_1650, temp_2881 = [], [], [], [], []
-            for element in pkl_data['all_near_fields']:  # looping through a list
-                
+            
+            for i, element in enumerate(pkl_data['all_near_fields']):  # looping through a list
+                if i == 1000:
+                    break
                 # each element is a dictionary
                 for key, value in element.items():
                     if key == 'near_fields_1550':
@@ -144,6 +146,7 @@ class CAI_Datamodule(LightningDataModule):
             #for time in pkl_data['sim_times']:
             #    new_data['sim_times'].append(time)
             # Specify the path and filename for the output .pt file
+            
             filename = filename
             #filename = "dataset.pt"
             output_pt_file = output_pt_file
@@ -157,12 +160,14 @@ class CAI_Datamodule(LightningDataModule):
         if stage == "fit" or stage is None:
             #dataset = customDataset(self.params, torch.load(os.path.join(self.path_data, train_file)),
             #                        self.transform)
-            
+             
             dataset = customDataset(self.params, torch.load(output_pt_file),
                                     self.transform)
+            
             train_set_size = int(len(dataset)*0.8)
             valid_set_size = len(dataset) - train_set_size
 
+            print(f"total samples: {len(dataset)}\ntrain set size: {train_set_size}\nvalid set size: {valid_set_size}")
             # set minimum of batch size to 2 to prevent torch.squeeze() errors in objective function           
             while train_set_size % self.batch_size < 2 and valid_set_size % self.batch_size < 2:
                 self.batch_size += 1
@@ -181,7 +186,7 @@ class CAI_Datamodule(LightningDataModule):
 
     def val_dataloader(self):
         return DataLoader(self.cai_valid, batch_size=self.batch_size, num_workers=self.n_cpus,
-                                                        persistent_workers=True)
+                                                        persistent_workers=True, shuffle=False)
 
     def test_dataloader(self):
         return DataLoader(self.cai_test, batch_size=self.batch_size, num_workers=self.n_cpus)
@@ -195,16 +200,6 @@ class customDataset(Dataset):
         self.transform = transform
         logging.debug("customDataset | Setting transform to {}".format(self.transform))
         self.all_near_fields = data['all_near_fields']
-        #if params['source_wl'] == 1550:
-        #    temp_near_fields = self.all_near_fields['near_fields_1550']
-        #elif params['source_wl'] == 1060:
-        #    temp_near_fields = self.all_near_fields['near_fields_1060']
-        #elif params['source_wl'] == 1300:
-        #    temp_near_fields = self.all_near_fields['near_fields_1300']
-        #elif params['source_wl'] == 1650:
-        #    temp_near_fields = self.all_near_fields['near_fields_1650']
-        #elif params['source_wl'] == 2881:
-        #    temp_near_fields = self.all_near_fields['near_fields_2881']
         
         temp_nf_2881 = self.all_near_fields['near_fields_2881']
         temp_nf_1650 = self.all_near_fields['near_fields_1650']
