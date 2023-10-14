@@ -2,8 +2,8 @@
 
 1. Request access to S3 Resources: https://github.com/MU-HPDI/nautilus/wiki/Using-Nautilus-S3
     - This resource also shows you how to create your S3 bucket and copy data to/from.
-    - You'll want to set up local S3 integration on your local compute using the instructions at the link.
-2. You'll need to have an interactive pod mounted to your PV whose docker image has rclone installed.
+    - Set up local S3 integration on your local compute using the instructions at the link.
+2. You'll need to have an interactive pod mounted to your PV whose docker image has rclone installed. If the docker image does NOT have rclone installed, you can install it manually. Note that this will not persist, however, and monitor pods have an "expiration" of 6 hours. Here's how you install rclone manually:
 ```bash
 -v ; curl https://rclone.org/install.sh | bash
 ```
@@ -289,10 +289,46 @@ e/n/d/r/c/s/q> q
 
 -Note: There's probabaly a better way. We should figure out how to put this config stuff in the yaml file that your pod uses so we don't have to set up local S3 Integration every time.
 
-5. Run `rclone lsd nautilus:` both locally and from your pod to make sure your bucket exists.
-6. From your interactive pod, copy data from your PV to the bucket: `rclone copy --progress --copy-links {path/to/your/data} nautilus:{your-bucket}`
-    - Note: If you build directories in your bucket, make sure you include the path to the data your grabbing: `rclone copy --progress --copy-links {/path/to/your/data} nautilus:{your-bucket/your/path}`
-7. From your local machine, copy data from the bucket to a local path: `rclone copy --progress --copy-links nautilus:{your-bucketi/and/path/if/it/exists} {your/local/destination/path}`
+5. Run
+   ```bash
+   rclone lsd nautilus:
+   ```
+   both locally and from your pod to make sure your bucket exists.
+7. From your interactive pod, copy data from your PV to the bucket:
+   ```bash
+   rclone copy --progress --copy-links {path/to/your/data} nautilus:{your-bucket}
+   ```
+9. From your local machine, copy data from the bucket to a local path:
+    ```bash
+   rclone copy --progress --copy-links nautilus:{your-bucketi/and/path/if/it/exists} {your/local/destination/path}
+    ```
+
+-To see what's in your bucket:
+```
+rclone ls nautilus:{bucket-name}
+```
+
+-To remove a file from the bucket:
+```
+rclone delete nautilus:{bucket-name}/{filename}
+```
+
+If you want to remove more than one file, you can specify the minimum file size, for example, to delete all files larger than 6MB:
+```
+rclone --min-size 6M delete nautilus:{bucket-name}
+```
+
+## Resizing your PVC
+The easiest way to resize an existing PVC is to enter this command from your local:
+```bash
+kubectl edit pvc {pvc_name}
+```
+
+and edit the storage request values. save and exit. To confirm, run:
+```bash
+kubectl get pvc
+```
+You should see your volume size change here. Note that you might be allocated a little bit less than what you requested, but you can always request more.
 
 # Opening an jupyter notebook with kubernetes:
 
