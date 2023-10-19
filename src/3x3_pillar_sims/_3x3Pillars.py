@@ -20,6 +20,7 @@ class _3x3PillarSim():
     def __init__(self):
 
         logging.debug(" Initializing Single Pillar Sim")
+        self.vals = []
         
     def build_geometry(self, params):
         
@@ -64,8 +65,12 @@ class _3x3PillarSim():
  
     def build_dft_mon(self, params):
 
-        self.monitor = self.sim.add_dft_fields(params['cs'], params['freq_list'], where=params['near_vol'])
+        self.monitor_dft = self.sim.add_dft_fields(params['cs'], params['freq_list'], where=params['near_vol'])
 
+    def build_timedep_mon(self, params):
+
+        self.monitor_td = self.sim.add_flux(params['fcen'], params['df'],
+                                            params['nfreq'], params['fr'])
     def reset_field_info(self):
 
         self.dft_field_ex_2881 = self.dft_field_ey_2881 = self.dft_field_ez_2881 = []
@@ -80,28 +85,42 @@ class _3x3PillarSim():
         # which is set in parameter_manager.calculate_dependencies()
         # self.freq_list = [ 1 / wl for wl in self.wavelengths]
         # where wavelengths = [2.881, 1.650, 1.550, 1.300, 1.060] in the config file
-        self.dft_field_ex_2881 = self.sim.get_dft_array(self.monitor, mp.Ex, 0)
-        self.dft_field_ey_2881 = self.sim.get_dft_array(self.monitor, mp.Ey, 0)
-        self.dft_field_ez_2881 = self.sim.get_dft_array(self.monitor, mp.Ez, 0)
+        self.dft_field_ex_2881 = self.sim.get_dft_array(self.monitor_dft, mp.Ex, 0)
+        self.dft_field_ey_2881 = self.sim.get_dft_array(self.monitor_dft, mp.Ey, 0)
+        self.dft_field_ez_2881 = self.sim.get_dft_array(self.monitor_dft, mp.Ez, 0)
 
-        self.dft_field_ex_1650 = self.sim.get_dft_array(self.monitor, mp.Ex, 1)
-        self.dft_field_ey_1650 = self.sim.get_dft_array(self.monitor, mp.Ey, 1)
-        self.dft_field_ez_1650 = self.sim.get_dft_array(self.monitor, mp.Ez, 1)
+        self.dft_field_ex_1650 = self.sim.get_dft_array(self.monitor_dft, mp.Ex, 1)
+        self.dft_field_ey_1650 = self.sim.get_dft_array(self.monitor_dft, mp.Ey, 1)
+        self.dft_field_ez_1650 = self.sim.get_dft_array(self.monitor_dft, mp.Ez, 1)
 
-        self.dft_field_ex_1550 = self.sim.get_dft_array(self.monitor, mp.Ex, 2)
-        self.dft_field_ey_1550 = self.sim.get_dft_array(self.monitor, mp.Ey, 2)
-        self.dft_field_ez_1550 = self.sim.get_dft_array(self.monitor, mp.Ez, 2)
+        self.dft_field_ex_1550 = self.sim.get_dft_array(self.monitor_dft, mp.Ex, 2)
+        self.dft_field_ey_1550 = self.sim.get_dft_array(self.monitor_dft, mp.Ey, 2)
+        self.dft_field_ez_1550 = self.sim.get_dft_array(self.monitor_dft, mp.Ez, 2)
 
-        self.dft_field_ex_1300 = self.sim.get_dft_array(self.monitor, mp.Ex, 3)
-        self.dft_field_ey_1300 = self.sim.get_dft_array(self.monitor, mp.Ey, 3)
-        self.dft_field_ez_1300 = self.sim.get_dft_array(self.monitor, mp.Ez, 3)
+        self.dft_field_ex_1300 = self.sim.get_dft_array(self.monitor_dft, mp.Ex, 3)
+        self.dft_field_ey_1300 = self.sim.get_dft_array(self.monitor_dft, mp.Ey, 3)
+        self.dft_field_ez_1300 = self.sim.get_dft_array(self.monitor_dft, mp.Ez, 3)
 
-        self.dft_field_ex_1060 = self.sim.get_dft_array(self.monitor, mp.Ex, 4)
-        self.dft_field_ey_1060 = self.sim.get_dft_array(self.monitor, mp.Ey, 4)
-        self.dft_field_ez_1060 = self.sim.get_dft_array(self.monitor, mp.Ez, 4)
+        self.dft_field_ex_1060 = self.sim.get_dft_array(self.monitor_dft, mp.Ex, 4)
+        self.dft_field_ey_1060 = self.sim.get_dft_array(self.monitor_dft, mp.Ey, 4)
+        self.dft_field_ez_1060 = self.sim.get_dft_array(self.monitor_dft, mp.Ez, 4)
 
         self.eps_data = self.sim.get_epsilon()
-    
+
+        self.time_dep_field = self.sim.get_fluxes(model.monitor_td)[0]
+   
+    def get_slice(self, sim, params):
+        x_dim = 0.68
+        y_dim = 0.68
+        z_dim = 0 
+
+        z_loc = params['mon_center']
+
+        self.vals.append(sim.get_array(
+                            center=mp.Vector3(0,0,z_loc),
+                            size = mp.Vector3(x_slice, y_slice, z_slice),
+                            component = mp.Ey))   
+ 
     def run_sim(self, params):
         print("running sim")
         if params['source_type'] == "gaussian":
@@ -113,6 +132,14 @@ class _3x3PillarSim():
         elif params['source_type'] == "continuous":
             self.sim.run(until=200)
         
+        elif params['source_type'] == "test":
+
+            self.sim.run(mp.at_beginning(mp.output_epsilon),
+                        mp.at_every(0.6, self.get_slice),
+                        until_after_sources = mp.stop_when_fields_decayed(dt = params['dt'],
+                                                        c = params['source_cmpt'],
+                                                        pt = mp.Vector3(0, 0, params['mon_center']),
+                                                        decay_by = params['decay_rate']))
     def get_animation(self, params):
 
         # this method does not work with the current Dockerfile. We likely have a bug
@@ -145,10 +172,47 @@ class _3x3PillarSim():
             
         
 if __name__=="__main__":
-    
+   
+    radii_list = [0.1625, 0.16, 0.2, 0.18, 0.155, 0.162, 0.16, 0.18, 0.1]
+ 
     params = yaml.load(open('config.yaml'), Loader = yaml.FullLoader).copy()
-    pm = parameter_manager.Parameter_Manager(params=params)
-      
+    pm = parameter_manager.ParameterManager(params=params)
+    
+    a = pm.lattice_size
+    # Initialize model #
+    model = _3x3PillarSim()
+    
+    # Build geometry for initial conditions (no pillar) #
+    model.build_geometry(pm.geometry_params)
+    
+    pm.geometry = [model.fusedSilica_block, model.PDMS_block]
+                                                                                               
+    # should make this general, so it is dependent on grid size (currently hardcoded for 3x3) 
+    x_list = [-a, 0, a, -a, 0, a, -a, 0, a]
+    y_list = [a, a, a, 0, 0, 0, -a, -a, -a]
+    for i, neighbor in enumerate(radii_list):
+        pm.radius = neighbor
+        pm.x_dim = x_list[i]
+        pm.y_dim = y_list[i]
+        model.build_geometry(pm.geometry_params)
+        pm.geometry.append(model.pillar)
+    # Build Source object #
+    model.build_source(pm.source_params)
+    embed();exit() 
+
+    # Build Simulation object # 
+    pm.source = model.source
+    model.build_sim(pm.sim_params)
+    
+    # Build DFT monitor and populate field info #
+    model.build_dft_mon(pm.dft_params)  
+    start_time = time.time()
+    model.run_sim(pm.sim_params, )
+    elapsed_time = time.time() - start_time
+    elapsed_time = round(elapsed_time / 60,2)
+    
+    model.collect_field_info()                                                                  
+    embed()                                                                                           
     #pm.radius = 0
     #model = SinglePillarSim()
     #

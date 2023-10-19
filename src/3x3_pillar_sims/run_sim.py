@@ -74,7 +74,6 @@ def run(radii_list, index, pm, dataset=None):
         model.build_geometry(pm.geometry_params)
         pm.geometry.append(model.pillar)
     # Build Source object #
-    print("populated geometry")
     model.build_source(pm.source_params)
      
     # Build Simulation object # 
@@ -84,10 +83,10 @@ def run(radii_list, index, pm, dataset=None):
     # Build DFT monitor and populate field info #
     model.build_dft_mon(pm.dft_params)  
     start_time = time.time()
-    model.run_sim(pm.sim_params)
+    model.run_sim(pm.sim_params, )
     elapsed_time = time.time() - start_time
     elapsed_time = round(elapsed_time / 60,2)
-    print(f"simulation finished in {elapsed_time} minutes") 
+    
     model.collect_field_info()
     
     data = {}
@@ -122,7 +121,6 @@ def run(radii_list, index, pm, dataset=None):
     data["radii"] = radii_list
     
     if(pm.resim == 0):
-        print("dumping generated data now")
         dump_data(index, data, pm) 
     elif(pm.resim == 1):
         eval_name = f"sample_{index}_preprocessed.pkl"
@@ -136,32 +134,72 @@ def run(radii_list, index, pm, dataset=None):
         f = open(filename, "wb")
         pickle.dump(preprocessed_data, f) 
 
+def charlies_test(pm, index):
+    path_results = "/develop/results/spie_journal_2023/resim_params/charlie_test"
+    path_resims = os.path.join(path_results, "results.pkl")
+
+    model_results = pickle.load(open(os.path.join(path_resims), "rb"))
+    
+    preds = model_results['preds'][0]
+    labels = model_results['labels'][0]
+
+    single_pred = preds[index]
+    single_truth = labels[index]
+
+    radii_list = mapping.phase_to_radii(single_pred)
+    radii_list = np.round(radii_list, 6)
+    radii_list = list(radii_list)
+
+    embed();exit()
+    run(radii_list, index, pm, dataset="train")
+    print(f"done with charlie's test, index {index}")
+    # let's do another one:
+    single_pred = preds[index+1]
+    single_truth = labels[index+1]
+
+    radii_list = mapping.phase_to_radii(single_pred)
+    radii_list = np.round(radii_list, 6)
+    radii_list = list(radii_list)
+    run(radii_list, index, pm, dataset="train")
+    print(f"done with charlie's test, index {index+1}")
+
+def run_resim(idx, pm, dataset):
+
+    path_results = "/develop/results/spie_journal_2023/resim_params"
+    path_resims = os.path.join(path_results, pm.exp_name + pm.training_stage, dataset + '_info') # might need to change this too 
+    model_results = pickle.load(open(os.path.join(path_resims,'resim.pkl'), 'rb'))
+
+    phases = model_results['phase_pred'][idx]
+    radii_list = mapping.phase_to_radii(phases)
+    radii_list = np.round(radii_list, 6)
+    radii_list = list(radii_list)
+    run(radii_list, idx, pm, dataset=dataset)
+    print(f"{dataset} resim complete.")
+
 if __name__=="__main__":
 
     # Run experiment
 
     params = yaml.load(open('../config.yaml'), Loader = yaml.FullLoader).copy()
+    params['exp_name'] = "charlie_test"
     pm = parameter_manager.ParameterManager(params=params)
-    pm.resim = 0
-    pm.exp_name = "baseline_3"
+    pm.resim = 1
+    pm.training_stage = ""
     print(f"resolution is {pm.resolution}")
 
     if pm.resim == 0: # datagen
         print("run_sim.py set to generate data")
-
-        parser = argparse.ArgumentParser()
         parser.add_argument("-index", type=int, help="The index matching the index in radii_neighbors")
         parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to") # this is empty in our config file. gets set in the kubernetes job file
-        args = parser.parse_args()
-        print("parsed args successfully.") 
+           
+        args = parser.parse_args() 
 
         idx = args.index
         path_out_sims = args.path_out_sims
         pm.path_dataset = path_out_sims
-        print(f"idx={idx}")
+            
         neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
         radii_list = neighbors_library[idx]
-        print(f"about to launch sim - index = {idx}")
         run(radii_list, idx, pm)
              
 
@@ -169,29 +207,50 @@ if __name__=="__main__":
     elif pm.resim == 1:
         print("run_sim.py set to do resims.")
     
-        pm.training_stage = "_3"
-        pm.exp_name = "baseline"
         
         parser = argparse.ArgumentParser()
         parser.add_argument("-index", help="")       
-        parser.add_argument("-dataset", help="")       
         args = parser.parse_args() 
 
-        #radii = radii_list.strip('[]').split(',')
-        #radii_list = [float(radius.strip()) for radius in radii]
         idx = int(args.index)
-        dataset = args.dataset
 
-        path_results = "/develop/results/spie_journal_2023/resim_params"
-
+        charlies_test(pm, idx)
+        """
         # Need to get phase values from the model's predictions.
-        path_resims = os.path.join(path_results, pm.exp_name + pm.training_stage, dataset + '_info') # might need to change this too 
-        model_results = pickle.load(open(os.path.join(path_resims,'resim.pkl'), 'rb'))
-
-        phases = model_results['phase_pred'][idx]
-
-        radii_list = mapping.phase_to_radii(phases)
-        radii_list = np.round(radii_list, 6)
-        radii_list = list(radii_list)
-        
-        run(radii_list, idx, pm, dataset=dataset)
+        dataset="train"
+        print(f"running resim for {pm.exp_name}, {dataset} set")
+        run_resim(idx, pm, dataset)
+         
+        dataset="valid"
+        print(f"running resim for {pm.exp_name}, {dataset} set")
+        run_resim(idx, pm, dataset)
+        """
+#    elif pm.resim == 1:
+#        print("run_sim.py set to do resims.")
+#    
+#        pm.training_stage = ""
+#        pm.exp_name = "all_on"
+#        
+#        parser = argparse.ArgumentParser()
+#        parser.add_argument("-index", help="")       
+#        parser.add_argument("-dataset", help="")       
+#        args = parser.parse_args() 
+#
+#        #radii = radii_list.strip('[]').split(',')
+#        #radii_list = [float(radius.strip()) for radius in radii]
+#        idx = int(args.index)
+#        dataset = args.dataset
+#
+#        path_results = "/develop/results/spie_journal_2023/resim_params"
+#
+#        # Need to get phase values from the model's predictions.
+#        path_resims = os.path.join(path_results, pm.exp_name + pm.training_stage, dataset + '_info') # might need to change this too 
+#        model_results = pickle.load(open(os.path.join(path_resims,'resim.pkl'), 'rb'))
+#
+#        phases = model_results['phase_pred'][idx]
+#
+#        radii_list = mapping.phase_to_radii(phases)
+#        radii_list = np.round(radii_list, 6)
+#        radii_list = list(radii_list)
+#        run(radii_list, idx, pm, dataset=dataset)
+       
