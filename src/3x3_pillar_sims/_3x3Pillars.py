@@ -119,7 +119,8 @@ class _3x3PillarSim():
         self.eps_data = self.sim.get_epsilon()
 
         #self.time_dep_field = self.sim.get_fluxes(model.monitor_td)[0]
-   
+
+    # this is in progress for time dependent stuff   
     def get_slice(self, sim, params):
         x_dim = 0.68
         y_dim = 0.68
@@ -153,9 +154,6 @@ class _3x3PillarSim():
                                                         decay_by = params['decay_rate']))
     def get_animation(self, params):
 
-        # this method does not work with the current Dockerfile. We likely have a bug
-        # related to ffmpeg.
- 
         plot_plane = mp.Volume(center = mp.Vector3(0,0,0),
                                 size = mp.Vector3(params['lattice_size']*3, 0, params['cell_z']))
         plot_modifiers = [mod_axes]
@@ -168,16 +166,10 @@ class _3x3PillarSim():
                                 normalize = True,
                                 plot_modifiers = plot_modifiers)
 
-        if params['source_type'] == "gaussian":
-            until_after_sources = mp.stop_when_fields_decayed(dt=50,
-                                                        c=params['source_cmpt'],
-                                                        pt=mp.Vector3(0, 0, params['mon_center']),
-                                                        decay_by=params['decay_rate'])
-
-            self.sim.run(mp.at_every(0.1, Animate), until=50)    
+        self.sim.run(mp.at_every(0.1, Animate), until=50)    
         
-        results_path = "/develop/results"
-        name = f"{params['source_type']}.mp4"
+        results_path = "/develop/results/spie_journal_2023/animations"
+        name = f"{params['source_type']}_uniform.mp4"
         filename = os.path.join(results_path, name)
         Animate.to_mp4(params['fps'], filename)
         

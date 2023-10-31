@@ -41,7 +41,8 @@ def dump_geometry_image(model, pm):
     plt.savefig("geometry.png")
 
 def dump_data(neighbor_index, data, pm): # this is called when we're generating data
-    folder_path_sims = pm.path_dataset
+    folder_path_sims = "/develop/results/spie_journal_2023/animations"
+    #folder_path_sims = pm.path_dataset
     sim_name = "%s.pkl" % (str(neighbor_index).zfill(6))
     filename_sim = os.path.join(folder_path_sims, sim_name)
     print(f"dumping data to {filename_sim}")
@@ -68,7 +69,6 @@ def run(radii_list, index, pm, dataset=None):
     x_list = [-a, 0, a, -a, 0, a, -a, 0, a]
     y_list = [a, a, a, 0, 0, 0, -a, -a, -a]
 
-    rad = 0.2
     for i, neighbor in enumerate(radii_list):
         pm.radius = neighbor
         pm.x_dim = x_list[i]
@@ -81,13 +81,15 @@ def run(radii_list, index, pm, dataset=None):
     pm.source = model.source
     model.build_sim(pm.sim_params)
     
+    #model.get_animation(pm.animation_params)
+
     # Build DFT monitor and populate field info #
     model.build_dft_mon(pm.dft_params)  
     start_time = time.time()
-    model.run_sim(pm.sim_params, )
+    model.run_sim(pm.sim_params)
     elapsed_time = time.time() - start_time
     elapsed_time = round(elapsed_time / 60,2)
-    
+     
     model.collect_field_info()
     
     data = {}
@@ -121,9 +123,8 @@ def run(radii_list, index, pm, dataset=None):
     data["sim_time"] = elapsed_time
     data["radii"] = radii_list
     
-    model.get_animation(pm.animation_params)
     embed()
-    """
+    
     if(pm.resim == 0):
         dump_data(index, data, pm) 
     elif(pm.resim == 1):
@@ -137,36 +138,7 @@ def run(radii_list, index, pm, dataset=None):
         filename = os.path.join(path_resim, eval_name) 
         f = open(filename, "wb")
         pickle.dump(preprocessed_data, f) 
-    """
-def charlies_test(pm, index):
-    path_results = "/develop/results/spie_journal_2023/resim_params/charlie_test"
-    path_resims = os.path.join(path_results, "results.pkl")
-
-    model_results = pickle.load(open(os.path.join(path_resims), "rb"))
     
-    preds = model_results['preds'][0]
-    labels = model_results['labels'][0]
-
-    single_pred = preds[index]
-    single_truth = labels[index]
-
-    radii_list = mapping.phase_to_radii(single_pred)
-    radii_list = np.round(radii_list, 6)
-    radii_list = list(radii_list)
-
-    embed();exit()
-    run(radii_list, index, pm, dataset="train")
-    print(f"done with charlie's test, index {index}")
-    # let's do another one:
-    single_pred = preds[index+1]
-    single_truth = labels[index+1]
-
-    radii_list = mapping.phase_to_radii(single_pred)
-    radii_list = np.round(radii_list, 6)
-    radii_list = list(radii_list)
-    run(radii_list, index, pm, dataset="train")
-    print(f"done with charlie's test, index {index+1}")
-
 def run_resim(idx, pm, dataset):
 
     path_results = "/develop/results/spie_journal_2023/resim_params"
@@ -193,20 +165,23 @@ if __name__=="__main__":
         print("run_sim.py set to generate data")
         
         parser = argparse.ArgumentParser()
-        parser.add_argument("-index", type=int, help="The index matching the index in radii_neighbors")
+        #parser.add_argument("-index", type=int, help="The index matching the index in radii_neighbors")
         parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to") # this is empty in our config file. gets set in the kubernetes job file
            
         args = parser.parse_args() 
 
-        idx = args.index
+        #idx = args.index
         path_out_sims = args.path_out_sims
-        pm.path_dataset = path_out_sims
+        #pm.path_dataset = path_out_sims
             
-        neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
-        radii_list = neighbors_library[idx]
+        #neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
+        #radii_list = neighbors_library[idx]
+
+        radii_list = np.ones((1,9))*0.2
+        radii_list = radii_list.reshape(-1).tolist()
+        idx = "uniform"
         run(radii_list, idx, pm)
              
-
     # RESIMS
     elif pm.resim == 1:
         print("run_sim.py set to do resims.")

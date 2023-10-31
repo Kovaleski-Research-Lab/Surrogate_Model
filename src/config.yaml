@@ -42,7 +42,7 @@ weights:
 num_classes: 1
 optimizer: 'ADAM'
 backbone: 'resnet18'
-learning_rate: 1.e-6
+learning_rate: 3.e-4
 objective_function: 'mse'
 
 accelerator: 'gpu' 
@@ -161,8 +161,7 @@ dt : 50
 #   Simulation Parameters
 #-------------------------
 
-#resolution : 80
-resolution : 10
+resolution : 80
 lattice_size : 0.680
 grid_size : 3 
 
