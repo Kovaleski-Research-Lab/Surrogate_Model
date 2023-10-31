@@ -149,7 +149,7 @@ fwidth :
 k_point :
 center_source :
 source_cmpt :
-source_type : "test"
+source_type : "gaussian"
 source :
 cell_x :
 cell_y :

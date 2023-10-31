@@ -67,6 +67,8 @@ def run(radii_list, index, pm, dataset=None):
     # should make this general, so it is dependent on grid size (currently hardcoded for 3x3) 
     x_list = [-a, 0, a, -a, 0, a, -a, 0, a]
     y_list = [a, a, a, 0, 0, 0, -a, -a, -a]
+
+    rad = 0.2
     for i, neighbor in enumerate(radii_list):
         pm.radius = neighbor
         pm.x_dim = x_list[i]
@@ -75,7 +77,6 @@ def run(radii_list, index, pm, dataset=None):
         pm.geometry.append(model.pillar)
     # Build Source object #
     model.build_source(pm.source_params)
-     
     # Build Simulation object # 
     pm.source = model.source
     model.build_sim(pm.sim_params)
@@ -120,6 +121,9 @@ def run(radii_list, index, pm, dataset=None):
     data["sim_time"] = elapsed_time
     data["radii"] = radii_list
     
+    model.get_animation(pm.animation_params)
+    embed()
+    """
     if(pm.resim == 0):
         dump_data(index, data, pm) 
     elif(pm.resim == 1):
@@ -133,7 +137,7 @@ def run(radii_list, index, pm, dataset=None):
         filename = os.path.join(path_resim, eval_name) 
         f = open(filename, "wb")
         pickle.dump(preprocessed_data, f) 
-
+    """
 def charlies_test(pm, index):
     path_results = "/develop/results/spie_journal_2023/resim_params/charlie_test"
     path_resims = os.path.join(path_results, "results.pkl")
@@ -181,14 +185,14 @@ if __name__=="__main__":
     # Run experiment
 
     params = yaml.load(open('../config.yaml'), Loader = yaml.FullLoader).copy()
-    params['exp_name'] = "charlie_test"
     pm = parameter_manager.ParameterManager(params=params)
-    pm.resim = 1
+    pm.resim = 0
     pm.training_stage = ""
     print(f"resolution is {pm.resolution}")
-
     if pm.resim == 0: # datagen
         print("run_sim.py set to generate data")
+        
+        parser = argparse.ArgumentParser()
         parser.add_argument("-index", type=int, help="The index matching the index in radii_neighbors")
         parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to") # this is empty in our config file. gets set in the kubernetes job file
            

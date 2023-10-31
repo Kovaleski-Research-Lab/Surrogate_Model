@@ -15,6 +15,17 @@ import time
 sys.path.append("../")
 from utils import parameter_manager
 
+font = {
+    'family': 'sans-serif',
+    'size': 16
+}
+
+def mod_axes(ax):
+    ax.set_xlabel('X [$\mu$m]', fontdict=font)
+    ax.set_ylabel('Z [$\mu$m]', fontdict=font)
+    ax.tick_params(axis='both', labelsize=14)
+    return ax
+
 class _3x3PillarSim():
 
     def __init__(self):
@@ -107,7 +118,7 @@ class _3x3PillarSim():
 
         self.eps_data = self.sim.get_epsilon()
 
-        self.time_dep_field = self.sim.get_fluxes(model.monitor_td)[0]
+        #self.time_dep_field = self.sim.get_fluxes(model.monitor_td)[0]
    
     def get_slice(self, sim, params):
         x_dim = 0.68
@@ -146,11 +157,11 @@ class _3x3PillarSim():
         # related to ffmpeg.
  
         plot_plane = mp.Volume(center = mp.Vector3(0,0,0),
-                                size = mp.Vector3(params['lattice_size'], 0, params['cell_z']))
+                                size = mp.Vector3(params['lattice_size']*3, 0, params['cell_z']))
         plot_modifiers = [mod_axes]
 
         f = plt.figure(dpi=100, figsize=(8,15))
-        Animate = mp.Animate2D(output_plane = params['plot_plane'],
+        Animate = mp.Animate2D(output_plane = plot_plane,
                                 fields = params['source_cmpt'],
                                 f = f,
                                 realtime = False,
@@ -165,11 +176,10 @@ class _3x3PillarSim():
 
             self.sim.run(mp.at_every(0.1, Animate), until=50)    
         
-        results_path = "/develop/results/spie_journal_2023"
+        results_path = "/develop/results"
         name = f"{params['source_type']}.mp4"
         filename = os.path.join(results_path, name)
         Animate.to_mp4(params['fps'], filename)
-            
         
 if __name__=="__main__":
    
