@@ -41,7 +41,8 @@ def dump_geometry_image(model, pm):
     plt.savefig("geometry.png")
 
 def dump_data(neighbor_index, data, pm): # this is called when we're generating data
-    folder_path_sims = "/develop/results/spie_journal_2023/animations"
+    folder_path_sims = "/develop/results"
+    #folder_path_sims = "/develop/results/spie_journal_2023/animations"
     #folder_path_sims = pm.path_dataset
     sim_name = "%s.pkl" % (str(neighbor_index).zfill(6))
     filename_sim = os.path.join(folder_path_sims, sim_name)
@@ -56,6 +57,7 @@ def dump_data(neighbor_index, data, pm): # this is called when we're generating 
     print("\nEverything done\n")
 
 def run(radii_list, index, pm, dataset=None):
+
     a = pm.lattice_size
     # Initialize model #
     model = _3x3Pillars._3x3PillarSim()
@@ -75,13 +77,15 @@ def run(radii_list, index, pm, dataset=None):
         pm.y_dim = y_list[i]
         model.build_geometry(pm.geometry_params)
         pm.geometry.append(model.pillar)
+
     # Build Source object #
     model.build_source(pm.source_params)
+
     # Build Simulation object # 
     pm.source = model.source
     model.build_sim(pm.sim_params)
-    
-    #model.get_animation(pm.animation_params)
+   
+    model.get_animation(pm.animation_params)
 
     # Build DFT monitor and populate field info #
     model.build_dft_mon(pm.dft_params)  
@@ -123,8 +127,6 @@ def run(radii_list, index, pm, dataset=None):
     data["sim_time"] = elapsed_time
     data["radii"] = radii_list
     
-    embed()
-    
     if(pm.resim == 0):
         dump_data(index, data, pm) 
     elif(pm.resim == 1):
@@ -165,21 +167,20 @@ if __name__=="__main__":
         print("run_sim.py set to generate data")
         
         parser = argparse.ArgumentParser()
-        #parser.add_argument("-index", type=int, help="The index matching the index in radii_neighbors")
+        parser.add_argument("-index", type=int, help="The index matching the index in radii_neighbors")
         parser.add_argument("-path_out_sims", help="This is the path that simulations get dumped to") # this is empty in our config file. gets set in the kubernetes job file
            
         args = parser.parse_args() 
 
-        #idx = args.index
+        idx = args.index
         path_out_sims = args.path_out_sims
-        #pm.path_dataset = path_out_sims
+        pm.path_dataset = path_out_sims
             
-        #neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
-        #radii_list = neighbors_library[idx]
+        neighbors_library = pickle.load(open("neighbors_library_allrandom.pkl", "rb"))
+        radii_list = neighbors_library[idx]
 
-        radii_list = np.ones((1,9))*0.2
-        radii_list = radii_list.reshape(-1).tolist()
-        idx = "uniform"
+        #radii_list = np.ones((1,9))*0.2
+        #radii_list = radii_list.reshape(-1).tolist()
         run(radii_list, idx, pm)
              
     # RESIMS

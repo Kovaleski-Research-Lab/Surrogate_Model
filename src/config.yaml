@@ -12,11 +12,11 @@ model_id: "baseline_1_nockpt"
 
 exp_name: 
 prev_model_id:
-#torch_home: '~/.cache/torch/'
 
 #--------------------------------
 #       Training Params
 #--------------------------------
+
 batch_size: 16 
 num_epochs: 100 
 
@@ -53,7 +53,6 @@ valid_rate: 1
 #--------------------------------
 #       All paths
 #--------------------------------
-#path_root: '/home/marshall/research/cai_2023'
 path_root: '/develop/'
 path_data: 'data/spie_journal_2023/kube_dataset/'
 # 
@@ -64,42 +63,14 @@ path_resims: 'resims/'
 path_dataset: 
 
 #--------------------------------
-#       Physical Params
-#--------------------------------
-
-#Metasurface simulation
-#Nx_metaAtom: 3
-#Ny_metaAtom: 3
-#Lx_metaAtom: 680.e-9
-#Ly_metaAtom: 680.e-9
-#
-#h_pillar: 102.e-9
-#thickness_pml: 780.e-9
-#thickness_fusedSilica: 780.e-9
-#thickness_PDMS: 1560.e-9
-#
-##General
-#wavelength: 1550.e-9
-#
-##Fourier propagation
-#distance: 10.e-6
-Nxp: 166 # make this dynamic, put in parameter manager. it's data.shape
-Nyp: 166
-#Lxp: 2.04e-6
-#Lyp: 2.04e-6
-#adaptive: True
-data_shape:
-
-#--------------------------------
 #       Datamodule Params
 #--------------------------------
 which: 'CAI'
 n_cpus: 5
 source_wl : 1550
-
-#-------------------------------
-#   General Params - datagen
-#-------------------------------
+Nxp: 166 # make this dynamic, put in parameter manager. it's data.shape
+Nyp: 166
+data_shape:
 
 #------------------------
 #   Material Parameters
@@ -134,17 +105,7 @@ geometry :
 
 wavelengths : [2.881, 1.650, 1.550, 1.300, 1.060]
 cen_wavelength : 1.55
-#wavelength_1550 : 1.55
-#wavelength_1300 : 1.30
-#wavelength_1060 : 1.06
-#wavelength_1650 : 1.65
-#wavelength_2881 : 2.881 
 fcen :
-#freq_1550 :
-#freq_1300 :
-#freq_1060 :
-#freq_1650 :
-#freq_2881 :
 fwidth :
 k_point :
 center_source :

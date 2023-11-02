@@ -136,22 +136,15 @@ class _3x3PillarSim():
     def run_sim(self, params):
         print("running sim")
         if params['source_type'] == "gaussian":
-            self.sim.run(until_after_sources = mp.stop_when_fields_decayed(dt = params['dt'],
-                                                        c = params['source_cmpt'],
-                                                        pt = mp.Vector3(0, 0, params['mon_center']),
-                                                        decay_by = params['decay_rate'])) # see gaussian_vs_continous.ipynb for justification of 1e-3 for decay rate
+         #   self.sim.run(until_after_sources = mp.stop_when_fields_decayed(dt = params['dt'],
+         #                                               c = params['source_cmpt'],
+         #                                               pt = mp.Vector3(0, 0, params['mon_center']),
+         #                                               decay_by = params['decay_rate'])) # see gaussian_vs_continous.ipynb for justification of 1e-3 for decay rate
+            self.sim.run(until=200)
 
         elif params['source_type'] == "continuous":
             self.sim.run(until=200)
         
-        elif params['source_type'] == "test":
-
-            self.sim.run(mp.at_beginning(mp.output_epsilon),
-                        mp.at_every(0.6, self.get_slice),
-                        until_after_sources = mp.stop_when_fields_decayed(dt = params['dt'],
-                                                        c = params['source_cmpt'],
-                                                        pt = mp.Vector3(0, 0, params['mon_center']),
-                                                        decay_by = params['decay_rate']))
     def get_animation(self, params):
 
         plot_plane = mp.Volume(center = mp.Vector3(0,0,0),
@@ -168,8 +161,8 @@ class _3x3PillarSim():
 
         self.sim.run(mp.at_every(0.1, Animate), until=50)    
         
-        results_path = "/develop/results/spie_journal_2023/animations"
-        name = f"{params['source_type']}_uniform.mp4"
+        results_path = "/develop/results"
+        name = f"{params['source_type']}_nonuniform.mp4"
         filename = os.path.join(results_path, name)
         Animate.to_mp4(params['fps'], filename)
         
@@ -200,7 +193,6 @@ if __name__=="__main__":
         pm.geometry.append(model.pillar)
     # Build Source object #
     model.build_source(pm.source_params)
-    embed();exit() 
 
     # Build Simulation object # 
     pm.source = model.source
@@ -214,7 +206,6 @@ if __name__=="__main__":
     elapsed_time = round(elapsed_time / 60,2)
     
     model.collect_field_info()                                                                  
-    embed()                                                                                           
     #pm.radius = 0
     #model = SinglePillarSim()
     #
