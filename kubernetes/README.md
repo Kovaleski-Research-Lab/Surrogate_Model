@@ -7,7 +7,11 @@
 ```bash
 -v ; curl https://rclone.org/install.sh | bash
 ```
-
+Trouble with this? Try:
+```
+sudo apt-get update
+sudo apt-get install unzip
+```
 - set up local s3 configuration as you did in step one, but this time set your endpoint to http://rook-ceph-rgw-centrals3.rook-central. Follow this process:
     
 ```bash
